@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Mbogo College School - Premier Secondary School in Kampala, Uganda. Academic excellence since 2005." />
+  <title>Mbogo College School – Kampala, Uganda</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    :root {
+      --primary: #003366;
+      --secondary: #f5a623;
+      --light: #f4f4f9;
+      --dark: #1a1a1a;
+      --white: #ffffff;
+      --gray: #666;
+      --shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+      --border-radius: 8px;
+      --success: #28a745;
+      --danger: #dc3545;
+      --warning: #ffc107;
+    }
+
+    body {
+      background: var(--light);
+      color: var(--dark);
+      line-height: 1.6;
+    }
+
+    a {
+      text-decoration: none;
+      color: var(--primary);
+      cursor: pointer;
+    }
+
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--secondary);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+      display: none;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      border-radius: 8px;
+      color: white;
+      z-index: 9999;
+      animation: slideIn 0.5s ease;
+      display: none;
+      max-width: 400px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      font-weight: 500;
+    }
+
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+    .toast.warning { background: var(--warning); color: var(--dark); }
+    .toast.show { display: block; }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      background: var(--white);
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .logo i {
+      color: var(--secondary);
+      font-size: 2rem;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: var(--dark);
+      font-weight: 500;
+      transition: color 0.3s;
+      cursor: pointer;
+    }
+
+    .nav-links a:hover {
+      color: var(--secondary);
+    }
+
+    .btn-login, .btn-signup {
+      background: var(--secondary);
+      color: var(--white);
+      padding: 0.5rem 1.2rem;
+      border-radius: 50px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-left: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .btn-login:hover, .btn-signup:hover {
+      background: #e59400;
+    }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      cursor: pointer;
+    }
+
+    .hamburger span {
+      height: 3px;
+      width: 25px;
+      background: var(--primary);
+      margin: 3px;
+      border-radius: 5px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(0,51,102,0.85) 0%, rgba(0,51,102,0.7) 100%), 
+                  url('https://images.unsplash.com/photo-1523050854058-8df90910a68a?w=1200&q=80')
+                  center/cover no-repeat;
+      color: var(--white);
+      padding: 5rem 2rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 70vh;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      margin-bottom: 1rem;
+      text-shadow: 2px 2px 5px rgba(0,0,0,0.4);
+    }
+
+    .hero p {
+      font-size: clamp(1rem, 2.5vw, 1.3rem);
+      max-width: 700px;
+      margin-bottom: 2rem;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .cta-btn {
+      background: var(--secondary);
+      color: var(--white);
+      padding: 0.8rem 2rem;
+      border-radius: 50px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.3s;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .cta-btn.outline {
+      background: transparent;
+      border: 2px solid var(--white);
+    }
+
+    .cta-btn:hover {
+      background: #d18d00;
+    }
+
+    .cta-btn.outline:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .section {
+      padding: 4rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section h2 {
+      font-size: 2.2rem;
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    .section h2::after {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 4px;
+      background: var(--secondary);
+      margin: 0.8rem auto;
+      border-radius: 2px;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+    }
+
+    .card {
+      background: var(--white);
+      padding: 2rem;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      text-align: center;
+      transition: transform 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card i {
+      font-size: 2.5rem;
+      color: var(--secondary);
+      margin-bottom: 1rem;
+    }
+
+    .testimonial {
+      background: var(--primary);
+      color: var(--white);
+      border-radius: var(--border-radius);
+      padding: 2rem;
+      font-style: italic;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    footer {
+      background: var(--dark);
+      color: #ccc;
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 2rem;
+      max-width: 1200px;
+      margin: 0 auto 2rem;
+      text-align: left;
+    }
+
+    .footer-grid h4 {
+      color: var(--white);
+      margin-bottom: 1rem;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--white);
+      padding: 2rem;
+      border-radius: var(--border-radius);
+      width: 90%;
+      max-width: 400px;
+      position: relative;
+      animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal h3 {
+      color: var(--primary);
+      margin-bottom: 1.5rem;
+    }
+
+    .modal input, .modal select {
+      width: 100%;
+      padding: 0.8rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #999;
+    }
+
+    .dashboard {
+      display: none;
+      max-width: 1000px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: var(--white);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+    }
+
+    .dashboard.active {
+      display: block;
+    }
+
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .classwork-form, .classwork-list {
+      margin: 1.5rem 0;
+    }
+
+    .classwork-form input,
+    .classwork-form textarea,
+    .classwork-form select {
+      width: 100%;
+      padding: 0.8rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+    }
+
+    .classwork-item {
+      background: var(--light);
+      padding: 1rem;
+      border-radius: var(--border-radius);
+      margin-bottom: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .progress-bar {
+      height: 10px;
+      background: #ddd;
+      border-radius: 10px;
+      margin: 0.5rem 0;
+      width: 100%;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--secondary);
+      border-radius: 10px;
+      transition: width 0.5s ease;
+    }
+
+    .subject-badge {
+      background: var(--primary);
+      color: white;
+      padding: 0.2rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+    }
+
+    .status-submitted {
+      color: var(--success);
+      font-weight: bold;
+    }
+
+    .status-pending {
+      color: var(--warning);
+      font-weight: bold;
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 70px;
+        left: 0;
+        right: 0;
+        background: var(--white);
+        box-shadow: var(--shadow);
+        padding: 1rem;
+        gap: 1rem;
+      }
+
+      .nav-links.active {
+        display: flex;
+      }
+
+      .hamburger {
+        display: flex;
+      }
+
+      .hero h1 {
+        font-size: 1.8rem;
+      }
+      
+      .section h2 {
+        font-size: 1.6rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Toast Notification -->
+  <div class="toast" id="toast"></div>
+  
+  <!-- NAVIGATION -->
+  <nav class="navbar">
+    <div class="logo">
+      <i class="fas fa-school"></i> 
+      <span>Mbogo College School</span>
+    </div>
+    <div class="hamburger" id="hamburger">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="nav-links" id="navLinks">
+      <a onclick="showSection('home')">Home</a>
+      <a onclick="showSection('about')">About</a>
+      <a onclick="showSection('programs')">Programs</a>
+      <a onclick="showSection('contact')">Contact</a>
+      <button class="btn-login" id="loginBtn" onclick="openModal('loginModal')">
+        <i class="fas fa-sign-in-alt"></i> Login
+      </button>
+      <button class="btn-signup" id="signupBtn" onclick="openModal('signupModal')">
+        <i class="fas fa-user-plus"></i> Sign Up
+      </button>
+      <span id="userGreeting" style="display:none; font-weight:bold;"></span>
+      <button id="logoutBtn" style="display:none;" class="btn-login" onclick="logout()">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div id="homeSection">
+    <section class="hero">
+      <a href="https://imgbb.com/"><img src="https://i.ibb.co/3m1ZXDHJ/download.jpg" alt="download" border="0" width="250" height="220"></a>
+      <h1>Mbogo College School<br>Shaping Future Leaders</h1>
+      <p>A premier secondary school in Kampala, Uganda – combining academic excellence with character development since 2006.</p>
+      <div class="hero-buttons">
+        <button class="cta-btn" onclick="openModal('signupModal')">Enroll Now</button>
+        <button class="cta-btn outline" onclick="showSection('about')">Discover More</button>
+        
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Why Mbogo College?</h2>
+      <div class="card-grid">
+        <div class="card">
+          <i class="fas fa-chalkboard-teacher"></i>
+          <h3>Expert Teachers</h3>
+          <p>Dedicated educators with modern teaching methods and a heart for every student.</p>
+        </div>
+        <div class="card">
+          <i class="fas fa-laptop-code"></i>
+          <h3>Digital Learning</h3>
+          <p>Online classwork, progress tracking, and digital resources accessible anytime.</p>
+        </div>
+        <div class="card">
+          <i class="fas fa-football-ball"></i>
+          <h3>Sports & Arts</h3>
+          <p>Well-rounded programmes including Teble Tennis ICT, Co-Curricular activities and debate.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top: 0;">
+      <div class="testimonial">
+        <i class="fas fa-quote-left" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+        "Mbogo College gave my child the confidence and skills to excel. The online platform keeps me updated on her progress."
+        <br/>– Parent, Kampala
+      </div>
+    </section>
+  </div>
+
+  <!-- About Section -->
+  <div id="aboutSection" style="display:none;" class="section">
+    <h2>About Mbogo College</h2>
+    <p style="max-width:800px; margin:0 auto 2rem; text-align:center;">
+      Founded in Kampala, Mbogo College School is built on the values of discipline, knowledge, and community. 
+      We offer both O-Level and A-Level curricula (Uganda National Examinations Board) with a focus on science, arts, and technology.
+    </p>
+    <div class="card-grid">
+      <div class="card"><i class="fas fa-bullseye"></i><h3>Mission</h3><p>To nurture holistic individuals equipped for higher education and life.</p></div>
+      <div class="card"><i class="fas fa-eye"></i><h3>Vision</h3><p>To be a centre of academic excellence in East Africa.</p></div>
+    </div>
+  </div>
+
+  <!-- Programs Section -->
+  <div id="programsSection" style="display:none;" class="section">
+    <h2>Our Programmes</h2>
+    <div class="card-grid">
+      <div class="card"><i class="fas fa-flask"></i><h3>Sciences</h3><p>Physics, Chemistry, Biology, Mathematics – taught with full lab support.</p></div>
+      <div class="card"><i class="fas fa-book"></i><h3>Humanities</h3><p>History, Geography, Literature, and Religious Studies.</p></div>
+      <div class="card"><i class="fas fa-code"></i><h3>Educational Clubs</h3><p>ICT CLUB, WRITER'S CLUB, DEBATOR'S CLUB, etc</p></div>
+    </div>
+  </div>
+
+  <!-- Contact Section -->
+  <div id="contactSection" style="display:none;" class="section">
+    <h2>Contact Us</h2>
+    <div class="card-grid">
+      <div class="card"><i class="fas fa-map-marker-alt"></i><h3>Address</h3><p>PO BOX 10320, Kampala.<br> Mbogo Road, Kampala, Uganda</p></div>
+      <div class="card"><i class="fas fa-phone"></i><h3>Phone</h3><a href="call">+256703 204367</a></div>
+      <div class="card"><i class="fas fa-envelope"></i><h3>Email</h3><a href=" mbogocollegeschool@yahoo.com">mbogocollegeschool@yahoo.com</a></div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboardContainer" class="dashboard">
+    <div class="dashboard-header">
+      <h2><i class="fas fa-tachometer-alt"></i> <span id="dashboardTitle">Dashboard</span></h2>
+      <small id="welcomeUser"></small>
+    </div>
+    
+    <div id="teacherDashboard" style="display:none;">
+      <div class="card" style="margin-bottom: 2rem;">
+        <h3><i class="fas fa-plus-circle"></i> Post New Classwork</h3>
+        <div class="classwork-form">
+          <input type="text" id="cwTitle" placeholder="Title (e.g., Math Exercise 4)" />
+          <input type="text" id="cwSubject" placeholder="Subject (e.g., Mathematics)" />
+          <textarea id="cwDescription" rows="3" placeholder="Description or instructions"></textarea>
+          <input type="date" id="cwDueDate" />
+          <button class="btn-login" onclick="createClasswork()" style="width:100%;">
+            <i class="fas fa-paper-plane"></i> Publish Classwork
+          </button>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h3><i class="fas fa-list"></i> My Classwork</h3>
+        <div id="teacherClassworkList"></div>
+      </div>
+      
+      <div class="card" style="margin-top: 2rem;">
+        <h3><i class="fas fa-chart-line"></i> Student Progress</h3>
+        <div id="studentProgress"></div>
+      </div>
+    </div>
+    
+    <div id="studentDashboard" style="display:none;">
+      <div class="card">
+        <h3><i class="fas fa-tasks"></i> My Classwork</h3>
+        <div id="studentClassworkList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer id="mainFooter">
+    <div class="footer-grid">
+      <div><h4>Mbogo College School</h4><p>"Education Is Value"</p></div>
+      <div><h4>Quick Links</h4>
+        <a onclick="showSection('about')">About</a><br/>
+        <a onclick="showSection('programs')">Programmes</a>
+      </div>
+      <div><h4>Follow Us</h4>
+        <i class="fab fa-facebook"></i> 
+        <i class="fab fa-twitter"></i> 
+        <i class="fab fa-youtube"></i>
+      </div>
+    </div>
+    <p>&copy; 2026 Mbogo College School. All rights reserved.</p>
+  </footer>
+
+  <!-- LOGIN MODAL -->
+  <div class="modal-overlay" id="loginModal">
+    <div class="modal">
+      <span class="close-modal" onclick="closeModal('loginModal')">&times;</span>
+      <h3>Login to Your Account</h3>
+      <form onsubmit="login(event)">
+        <input type="email" id="loginEmail" placeholder="Email" required />
+        <input type="password" id="loginPassword" placeholder="Password" required />
+        <button type="submit" class="btn-login" style="width:100%">
+          <i class="fas fa-sign-in-alt"></i> Login
+        </button>
+      </form>
+      <p style="text-align:center;margin-top:1rem;font-size:0.9rem;">
+        No account? <a href="#" onclick="switchModal('signupModal')" style="color:var(--primary);">Sign Up</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- SIGNUP MODAL -->
+  <div class="modal-overlay" id="signupModal">
+    <div class="modal">
+      <span class="close-modal" onclick="closeModal('signupModal')">&times;</span>
+      <h3>Create Account</h3>
+      <form onsubmit="signup(event)">
+        <input type="text" id="signupName" placeholder="Full Name" required />
+        <input type="email" id="signupEmail" placeholder="Email" required />
+        <input type="password" id="signupPassword" placeholder="Password (min 8 characters)" required minlength="8" />
+        <select id="signupRole" required>
+          <option value="">Select Role</option>
+          <option value="student">Student</option>
+          <option value="teacher">Teacher</option>
+        </select>
+        <button type="submit" class="btn-login" style="width:100%">
+          <i class="fas fa-user-plus"></i> Sign Up
+        </button>
+      </form>
+      <p style="text-align:center;margin-top:1rem;font-size:0.9rem;">
+        Have an account? <a href="#" onclick="switchModal('loginModal')" style="color:var(--primary);">Login</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // ============ LOCAL STORAGE DATABASE ============
+    function getDB() {
+      return {
+        users: JSON.parse(localStorage.getItem('mbogo_users') || '[]'),
+        classwork: JSON.parse(localStorage.getItem('mbogo_classwork') || '[]'),
+        submissions: JSON.parse(localStorage.getItem('mbogo_submissions') || '[]')
+      };
+    }
+
+    function saveDB(db) {
+      localStorage.setItem('mbogo_users', JSON.stringify(db.users));
+      localStorage.setItem('mbogo_classwork', JSON.stringify(db.classwork));
+      localStorage.setItem('mbogo_submissions', JSON.stringify(db.submissions));
+    }
+
+    let currentUser = JSON.parse(localStorage.getItem('mbogo_currentUser') || 'null');
+
+    // ============ UTILITY FUNCTIONS ============
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.className = 'toast ' + type + ' show';
+      toast.textContent = message;
+      setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    }
+
+    // ============ AUTHENTICATION ============
+    function signup(event) {
+      event.preventDefault();
+      
+      const name = document.getElementById('signupName').value.trim();
+      const email = document.getElementById('signupEmail').value.trim();
+      const password = document.getElementById('signupPassword').value;
+      const role = document.getElementById('signupRole').value;
+
+      if (!name || !email || !password || !role) {
+        showToast('Please fill all fields', 'error');
+        return;
+      }
+
+      if (password.length < 8) {
+        showToast('Password must be at least 8 characters', 'error');
+        return;
+      }
+
+      const db = getDB();
+      
+      if (db.users.find(u => u.email === email)) {
+        showToast('Email already registered!', 'error');
+        return;
+      }
+
+      const newUser = {
+        id: Date.now(),
+        full_name: name,
+        email: email,
+        password: btoa(password),
+        role: role,
+        created_at: new Date().toISOString()
+      };
+
+      db.users.push(newUser);
+      saveDB(db);
+
+      currentUser = newUser;
+      localStorage.setItem('mbogo_currentUser', JSON.stringify(currentUser));
+
+      closeModal('signupModal');
+      updateUIForLoggedInUser();
+      showDashboard();
+      showToast('Account created successfully! Welcome, ' + name + '!', 'success');
+
+      document.getElementById('signupName').value = '';
+      document.getElementById('signupEmail').value = '';
+      document.getElementById('signupPassword').value = '';
+    }
+
+    function login(event) {
+      event.preventDefault();
+      
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      if (!email || !password) {
+        showToast('Please fill all fields', 'error');
+        return;
+      }
+
+      const db = getDB();
+      const user = db.users.find(u => u.email === email && u.password === btoa(password));
+
+      if (!user) {
+        showToast('Invalid email or password!', 'error');
+        return;
+      }
+
+      currentUser = user;
+      localStorage.setItem('mbogo_currentUser', JSON.stringify(currentUser));
+
+      closeModal('loginModal');
+      updateUIForLoggedInUser();
+      showDashboard();
+      showToast('Welcome back, ' + user.full_name.split(' ')[0] + '!', 'success');
+
+      document.getElementById('loginEmail').value = '';
+      document.getElementById('loginPassword').value = '';
+    }
+
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem('mbogo_currentUser');
+      updateUIForLoggedInUser();
+      showSection('home');
+      showToast('Logged out successfully.', 'success');
+    }
+
+    function updateUIForLoggedInUser() {
+      const greet = document.getElementById('userGreeting');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const loginBtn = document.getElementById('loginBtn');
+      const signupBtn = document.getElementById('signupBtn');
+
+      if (currentUser) {
+        greet.style.display = 'inline';
+        greet.textContent = 'Hello, ' + currentUser.full_name.split(' ')[0];
+        logoutBtn.style.display = 'inline-block';
+        loginBtn.style.display = 'none';
+        signupBtn.style.display = 'none';
+      } else {
+        greet.style.display = 'none';
+        logoutBtn.style.display = 'none';
+        loginBtn.style.display = 'inline-block';
+        signupBtn.style.display = 'inline-block';
+      }
+    }
+
+    // ============ CLASSWORK OPERATIONS ============
+    function createClasswork() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+
+      const title = document.getElementById('cwTitle').value.trim();
+      const subject = document.getElementById('cwSubject').value.trim();
+      const description = document.getElementById('cwDescription').value.trim();
+      const dueDate = document.getElementById('cwDueDate').value;
+
+      if (!title) {
+        showToast('Please enter a title for the classwork.', 'warning');
+        return;
+      }
+
+      const db = getDB();
+      db.classwork.push({
+        id: Date.now(),
+        teacher_id: currentUser.id,
+        teacher_name: currentUser.full_name,
+        title: title,
+        subject: subject,
+        description: description,
+        due_date: dueDate,
+        created_at: new Date().toISOString(),
+        submission_count: 0
+      });
+      saveDB(db);
+
+      document.getElementById('cwTitle').value = '';
+      document.getElementById('cwSubject').value = '';
+      document.getElementById('cwDescription').value = '';
+      document.getElementById('cwDueDate').value = '';
+
+      showToast('Classwork published successfully!', 'success');
+      loadTeacherClasswork();
+      loadStudentProgress();
+    }
+
+    function loadTeacherClasswork() {
+      const db = getDB();
+      const list = document.getElementById('teacherClassworkList');
+      
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      
+      const myClasswork = db.classwork.filter(cw => cw.teacher_id === currentUser.id);
+      
+      if (myClasswork.length === 0) {
+        list.innerHTML = '<p>No classwork posted yet.</p>';
+        return;
+      }
+
+      list.innerHTML = myClasswork.sort((a, b) => b.id - a.id).map(cw => {
+        const submissions = db.submissions.filter(s => s.classwork_id === cw.id).length;
+        return `
+          <div class="classwork-item">
+            <div>
+              <strong>${cw.title}</strong>
+              ${cw.subject ? '<span class="subject-badge">' + cw.subject + '</span>' : ''}
+              <br/>
+              <small>${cw.description || 'No description'}</small>
+              ${cw.due_date ? '<br/><small>Due: ' + cw.due_date + '</small>' : ''}
+            </div>
+            <div>
+              <small>${submissions} submissions</small>
+              <br/>
+              <small>Posted: ${new Date(cw.created_at).toLocaleDateString()}</small>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function loadStudentClasswork() {
+      const db = getDB();
+      const list = document.getElementById('studentClassworkList');
+      
+      if (db.classwork.length === 0) {
+        list.innerHTML = '<p>No classwork available yet.</p>';
+        return;
+      }
+
+      list.innerHTML = db.classwork.sort((a, b) => b.id - a.id).map(cw => {
+        const submission = db.submissions.find(
+          s => s.classwork_id === cw.id && s.student_id === currentUser?.id
+        );
+        
+        return `
+          <div class="classwork-item">
+            <div>
+              <strong>${cw.title}</strong>
+              ${cw.subject ? '<span class="subject-badge">' + cw.subject + '</span>' : ''}
+              <br/>
+              <small>Teacher: ${cw.teacher_name}</small>
+              <br/>
+              <small>${cw.description || ''}</small>
+              ${cw.due_date ? '<br/><small>Due: ' + cw.due_date + '</small>' : ''}
+            </div>
+            <div>
+              ${submission ? 
+                '<span class="status-submitted"><i class="fas fa-check-circle"></i> Submitted</span>' : 
+                '<span class="status-pending"><i class="fas fa-exclamation-circle"></i> Pending</span>'
+              }
+              ${!submission && currentUser ? 
+                '<br/><button class="btn-login" onclick="submitClasswork(' + cw.id + ')" style="font-size:0.8rem;">Submit</button>' : ''
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function submitClasswork(classworkId) {
+      if (!currentUser) return;
+      
+      const answer = prompt('Enter your answer:');
+      
+      if (!answer) {
+        showToast('Submission cancelled.', 'warning');
+        return;
+      }
+
+      const db = getDB();
+      
+      db.submissions = db.submissions.filter(
+        s => !(s.classwork_id === classworkId && s.student_id === currentUser.id)
+      );
+      
+      db.submissions.push({
+        id: Date.now(),
+        classwork_id: classworkId,
+        student_id: currentUser.id,
+        student_name: currentUser.full_name,
+        answer: answer,
+        submitted_at: new Date().toISOString()
+      });
+      saveDB(db);
+
+      showToast('Classwork submitted successfully!', 'success');
+      loadStudentClasswork();
+    }
+
+    function loadStudentProgress() {
+      if (!currentUser || currentUser.role !== 'teacher') return;
+      
+      const db = getDB();
+      const students = db.users.filter(u => u.role === 'student');
+      const myClasswork = db.classwork.filter(cw => cw.teacher_id === currentUser.id);
+      
+      const progressDiv = document.getElementById('studentProgress');
+      
+      if (students.length === 0) {
+        progressDiv.innerHTML = '<p>No students registered yet.</p>';
+        return;
+      }
+
+      progressDiv.innerHTML = students.map(student => {
+        const submitted = db.submissions.filter(
+          s => s.student_id === student.id && 
+          myClasswork.some(cw => cw.id === s.classwork_id)
+        ).length;
+        const total = myClasswork.length || 1;
+        const percent = Math.round((submitted / total) * 100);
+        
+        return `
+          <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <strong>${student.full_name}</strong>
+            <div class="progress-bar" style="margin: 0.5rem 0;">
+              <div class="progress-fill" style="width: ${percent}%;"></div>
+            </div>
+            <small>${submitted}/${total} completed (${percent}%)</small>
+          </div>
+        `;
+      }).join('');
+    }
+// ============ UI NAVIGATION ============
+    function showSection(section) {
+      document.getElementById('homeSection').style.display = (section === 'home') ? 'block' : 'none';
+      document.getElementById('aboutSection').style.display = (section === 'about') ? 'block' : 'none';
+      document.getElementById('programsSection').style.display = (section === 'programs') ? 'block' : 'none';
+      document.getElementById('contactSection').style.display = (section === 'contact') ? 'block' : 'none';
+      document.getElementById('dashboardContainer').classList.remove('active');
+      document.getElementById('navLinks').classList.remove('active');
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function showDashboard() {
+      document.getElementById('homeSection').style.display = 'none';
+      document.getElementById('aboutSection').style.display = 'none';
+      document.getElementById('programsSection').style.display = 'none';
+      document.getElementById('contactSection').style.display = 'none';
+      document.getElementById('dashboardContainer').classList.add('active');
+      
+      if (currentUser.role === 'teacher') {
+        document.getElementById('teacherDashboard').style.display = 'block';
+        document.getElementById('studentDashboard').style.display = 'none';
+        document.getElementById('dashboardTitle').textContent = 'Teacher Dashboard';
+        document.getElementById('welcomeUser').textContent = 'Welcome, ' + currentUser.full_name;
+        loadTeacherClasswork();
+        loadStudentProgress();
+      } else {
+        document.getElementById('studentDashboard').style.display = 'block';
+        document.getElementById('teacherDashboard').style.display = 'none';
+        document.getElementById('dashboardTitle').textContent = 'Student Dashboard';
+        document.getElementById('welcomeUser').textContent = 'Welcome, ' + currentUser.full_name;
+        loadStudentClasswork();
+      }
+      
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+      const inputs = document.getElementById(id).querySelectorAll('input');
+      inputs.forEach(input => input.value = '');
+    }
+
+    function switchModal(id) {
+      document.getElementById('loginModal').classList.remove('active');
+      document.getElementById('signupModal').classList.remove('active');
+      document.getElementById(id).classList.add('active');
+    }
+
+    window.onclick = function(event) {
+      if (event.target.classList.contains('modal-overlay')) {
+        event.target.classList.remove('active');
+      }
+    };
+
+    // ============ HAMBURGER MENU ============
+    document.getElementById('hamburger').addEventListener('click', () => {
+      document.getElementById('navLinks').classList.toggle('active');
+    });
+
+    document.querySelectorAll('.nav-links a, .nav-links button').forEach(link => {
+      link.addEventListener('click', () => {
+        document.getElementById('navLinks').classList.remove('active');
+      });
+    });
+
+    // ============ INITIALIZATION ============
+    if (!localStorage.getItem('mbogo_initialized')) {
+      const db = getDB();
+      
+      db.users.push({
+        id: 1001,
+        full_name: 'Mr. Robert Sseguya',
+        email: 'teacher@mbogo.sc.ug',
+        password: btoa('Teacher@123'),
+        role: 'teacher',
+        created_at: new Date().toISOString()
+      });
+      
+      db.users.push({
+        id: 1002,
+        full_name: 'Nakamya Grace',
+        email: 'student@mbogo.sc.ug',
+        password: btoa('Student@123'),
+        role: 'student',
+        created_at: new Date().toISOString()
+      });
+      
+      db.classwork.push({
+        id: 2001,
+        teacher_id: 1001,
+        teacher_name: 'Mr. Robert Sseguya',
+        title: 'Mathematics Exercise 1',
+        subject: 'Mathematics',
+        description: 'Solve problems 1-10 on page 45 of your textbook.',
+        due_date: '2026-05-15',
+        created_at: new Date().toISOString(),
+        submission_count: 0
+      });
+      
+      db.classwork.push({
+        id: 2002,
+        teacher_id: 1001,
+        teacher_name: 'Mr. Robert Sseguya',
+        title: 'Biology Quiz - Cell Structure',
+        subject: 'Biology',
+        description: 'Draw and label the parts of a plant cell.',
+        due_date: '2026-05-20',
+        created_at: new Date().toISOString(),
+        submission_count: 0
+      });
+      
+      saveDB(db);
+      localStorage.setItem('mbogo_initialized', 'true');
+    }
+
+    if (currentUser) {
+      updateUIForLoggedInUser();
+      showDashboard();
+    } else {
+      localStorage.removeItem('mbogo_currentUser');
+      currentUser = null;
+      updateUIForLoggedInUser();
+      showSection('home');
+    }
+
+    console.log('✅ Mbogo College School website ready!');
+    console.log('📧 Demo Logins:');
+    console.log('   Teacher: teacher@mbogo.sc.ug | Teacher@123');
+    console.log('   Student: student@mbogo.sc.ug | Student@123');
+  </script>
+</body>
+</html>
