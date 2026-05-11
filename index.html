@@ -6,7 +6,8 @@
   <meta name="description" content="Mbogo College School - Premier Secondary School in Kampala, Uganda. Academic excellence since 2005." />
   <title>Mbogo College School – Kampala, Uganda</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
     * {
       margin: 0;
@@ -673,6 +674,19 @@
   </div>
 
   <script>
+// ============ FIREBASE CONFIG ============
+const firebaseConfig = {
+  apiKey: "AIzaSyAjM2lMoD3E7zr8mCSU5cqUxfqUCOEsZTM",
+  authDomain: "mbogo-college-school-36e7c.firebaseapp.com",
+  projectId: "mbogo-college-school-36e7c",
+  storageBucket: "mbogo-college-school-36e7c.firebasestorage.app",
+  messagingSenderId: "66126002537",
+  appId: "1:66126002537:web:9187261918ae640d9465f8"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
     // ============ LOCAL STORAGE DATABASE ============
     function getDB() {
       return {
