@@ -7,13 +7,11 @@
     <meta name="keywords" content="Mbogo College, Kampala school, Uganda secondary school, education Kampala">
     <meta name="author" content="ICT Club - Mbogo College School">
     <title>Mbogo College School | Kampala, Uganda</title>
-    
-<!-- Firebase SDK -->
+    <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -961,26 +959,24 @@
 <script>
 // ============ FIREBASE CONFIGURATION ============
 const firebaseConfig = {
-‎  apiKey: "AIzaSyAjM2lMoD3E7zr8mCSU5cqUxfqUCOEsZTM",
-‎  authDomain: "mbogo-college-school-36e7c.firebaseapp.com",
-‎  projectId: "mbogo-college-school-36e7c",
-‎  storageBucket: "mbogo-college-school-36e7c.firebasestorage.app",
-‎  messagingSenderId: "66126002537",
-‎  appId: "1:66126002537:web:9187261918ae640d9465f8"
-‎};
-// Initialize Firebase
-let auth;
-let db;
-let storage;
+    apiKey: "AIzaSyAjM2lMoD3E7zr8mCSU5cqUxfqUCOEsZTM",
+    authDomain: "mbogo-college-school-36e7c.firebaseapp.com",
+    projectId: "mbogo-college-school-36e7c",
+    storageBucket: "mbogo-college-school-36e7c.firebasestorage.app",
+    messagingSenderId: "66126002537",
+    appId: "1:66126002537:web:9187261918ae640d9465f8"
+};
 
+// Initialize Firebase
 try {
     firebase.initializeApp(firebaseConfig);
-    auth = firebase.auth();
-    db = firebase.firestore();
-    storage = firebase.storage();
-    console.log('✅ Firebase connected!');
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+    console.log('✅ Firebase connected successfully!');
 } catch (error) {
-    console.error('❌ Firebase error:', error);
+    console.error('❌ Firebase connection error:', error);
+}
 
 // ============ GLOBAL STATE ============
 let currentUser = null;
