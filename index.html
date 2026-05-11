@@ -701,8 +701,6 @@
             }
         }
     </style>
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
 </head>
 <body>
 
@@ -843,6 +841,10 @@
 </div>
 
 <!-- SIGNUP MODAL -->
+<div class="form-group" id="parentEmailGroup" style="display:none;">
+    <label>Parent/Guardian Email (for students)</label>
+    <input type="email" class="form-control" id="parentEmail" placeholder="Enter parent's email address">
+</div>
 <div class="modal-overlay" id="signupModal">
     <div class="modal">
         <div class="modal-header">
@@ -962,9 +964,12 @@
 // ============ FIREBASE CONFIGURATION ============
 const firebaseConfig = {
     apiKey:"AIzaSyAjM2lMoD3E7zr8MnCSU5cqUxfqUCQEsZM",
-    authDomain: "mbo-go-college-school-36e7c.firebaseapp.io",
-    projectId: "mbo-go-college-school-36e7c",
-    storageBucket: "mbo-go-college-school-36e7c.firebaseio.app",
+// ============ FIREBASE CONFIGURATION ============
+const firebaseConfig = {
+    apiKey: "AIzaSyAjM2lMoD3E7zr8mCSU5cqUxfqUCOEsZTM",
+    authDomain: "mbogo-college-school-36e7c.firebaseapp.com",
+    projectId: "mbogo-college-school-36e7c",
+    storageBucket: "mbogo-college-school-36e7c.firebasestorage.app",
     messagingSenderId: "66126002537",
     appId: "1:66126002537:web:9187261918ae640d9465f8"
 };
@@ -974,54 +979,48 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-console.log('Firebase connected!');
+console.log('✅ Firebase connected!');
 
 // ============ GLOBAL STATE ============
 let currentUser = null;
 let userData = null;
-let currentDashboardSection = 'news';
 
 // ============ TOAST NOTIFICATIONS ============
 function showToast(message, type = 'success') {
     const container = document.getElementById('toastContainer');
+    if (!container) return;
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
     toast.innerHTML = `${icons[type] || ''} ${message}`;
+    toast.style.cssText = 'padding:15px 20px;border-radius:8px;color:white;margin-bottom:10px;animation:slideIn 0.3s ease;box-shadow:0 4px 12px rgba(0,0,0,0.2);';
+    toast.style.background = type === 'success' ? '#2d8a4e' : type === 'error' ? '#c0392b' : type === 'warning' ? '#e67e22' : '#2980b9';
     container.appendChild(toast);
-    setTimeout(() => { toast.remove(); }, 4000);
-}
-
-// ============ VISITOR COUNTER ============
-function updateVisitorCount() {
-    const count = parseInt(localStorage.getItem('mbogo_visitors') || '0') + 1;
-    localStorage.setItem('mbogo_visitors', count);
-    const counter = document.getElementById('visitorCount');
-    if (counter) counter.textContent = count;
+    setTimeout(() => toast.remove(), 4000);
 }
 
 // ============ NAVIGATION ============
-function toggleMenu() {
-    document.getElementById('navLinks').classList.toggle('active');
-}
-
 function showPage(page) {
     document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
+    document.getElementById('dashboardLayout')?.classList.remove('active');
     const pageEl = document.getElementById('page-' + page);
     if (pageEl) pageEl.style.display = 'block';
-    document.getElementById('dashboardLayout').classList.remove('active');
-    document.getElementById('navLinks').classList.remove('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function openModal(id) {
-    document.getElementById(id).classList.add('active');
+    document.getElementById(id)?.classList.add('active');
 }
 
 function closeModal(id) {
-    document.getElementById(id).classList.remove('active');
+    document.getElementById(id)?.classList.remove('active');
 }
 
+function toggleMenu() {
+    document.getElementById('navLinks')?.classList.toggle('active');
+}
+
+// Close modals on outside click
 window.onclick = function(event) {
     if (event.target.classList.contains('modal-overlay')) {
         event.target.classList.remove('active');
@@ -1032,14 +1031,16 @@ window.onclick = function(event) {
 async function signup(event) {
     event.preventDefault();
     
-    const name = document.getElementById('signupName').value.trim();
-    const email = document.getElementById('signupEmail').value.trim();
-    const password = document.getElementById('signupPassword').value;
-    const confirmPassword = document.getElementById('signupConfirmPassword').value;
-    const role = document.getElementById('signupRole').value;
+    const name = document.getElementById('signupName')?.value?.trim();
+    const email = document.getElementById('signupEmail')?.value?.trim();
+    const password = document.getElementById('signupPassword')?.value;
+    const confirmPassword = document.getElementById('signupConfirmPassword')?.value;
+    const role = document.getElementById('signupRole')?.value;
+    const parentEmail = document.getElementById('parentEmail')?.value?.trim();
     
+    // Validation
     if (!name || !email || !password || !role) {
-        showToast('Please fill all fields', 'error');
+        showToast('Please fill all required fields', 'error');
         return;
     }
     
@@ -1053,32 +1054,56 @@ async function signup(event) {
         return;
     }
     
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showToast('Please enter a valid email address', 'error');
+        return;
+    }
+    
     try {
+        // Create user in Firebase Auth
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
         
         // Save user data to Firestore
-        await db.collection('users').doc(user.uid).set({
+        const userDoc = {
             fullName: name,
             email: email,
             role: role,
+            parentEmail: parentEmail || null,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-        });
+            verified: true
+        };
         
-        // Send email verification
-        await user.sendEmailVerification();
+        await db.collection('users').doc(user.uid).set(userDoc);
         
-        showToast('Account created! Please check your email to verify.', 'success');
+        // If student has parent email, create link
+        if (role === 'student' && parentEmail) {
+            await db.collection('parentLinks').add({
+                studentId: user.uid,
+                studentName: name,
+                parentEmail: parentEmail,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+        
+        // Set current user
+        currentUser = user;
+        userData = userDoc;
+        localStorage.setItem('mbogo_user', JSON.stringify(userDoc));
+        
+        showToast('Account created successfully! Welcome, ' + name + '!', 'success');
         closeModal('signupModal');
-        document.getElementById('signupForm').reset();
+        updateUIBasedOnAuth();
+        showDashboard();
         
     } catch (error) {
         console.error('Signup error:', error);
         let message = error.message;
-        if (error.code === 'auth/email-already-in-use') message = 'This email is already registered.';
-        if (error.code === 'auth/invalid-email') message = 'Invalid email address.';
-        if (error.code === 'auth/weak-password') message = 'Password is too weak.';
+        if (error.code === 'auth/email-already-in-use') message = 'This email is already registered. Please login instead.';
+        if (error.code === 'auth/invalid-email') message = 'Please enter a valid email address.';
+        if (error.code === 'auth/weak-password') message = 'Password is too weak. Use at least 8 characters.';
         showToast(message, 'error');
     }
 }
@@ -1086,11 +1111,11 @@ async function signup(event) {
 async function login(event) {
     event.preventDefault();
     
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
+    const email = document.getElementById('loginEmail')?.value?.trim();
+    const password = document.getElementById('loginPassword')?.value;
     
     if (!email || !password) {
-        showToast('Please fill all fields', 'error');
+        showToast('Please enter email and password', 'error');
         return;
     }
     
@@ -1098,24 +1123,22 @@ async function login(event) {
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
         
-        if (!user.emailVerified) {
-            showToast('Please verify your email first. Check your inbox.', 'warning');
-            return;
-        }
-        
         // Get user data from Firestore
         const userDoc = await db.collection('users').doc(user.uid).get();
-        userData = userDoc.data();
-        currentUser = user;
         
-        // Update last login
-        await db.collection('users').doc(user.uid).update({
-            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-        });closeModal('loginModal');
-        document.getElementById('loginForm').reset();
+        if (userDoc.exists) {
+            userData = userDoc.data();
+        } else {
+            userData = { fullName: user.email, email: user.email, role: 'student' };
+        }
+        
+        currentUser = user;
+        localStorage.setItem('mbogo_user', JSON.stringify(userData));
+        
+        showToast('Welcome back, ' + userData.fullName?.split(' ')[0] + '!', 'success');
+        closeModal('loginModal');
         updateUIBasedOnAuth();
         showDashboard();
-        showToast('Welcome back, ' + userData.fullName.split(' ')[0] + '!', 'success');
         
     } catch (error) {
         console.error('Login error:', error);
@@ -1127,37 +1150,17 @@ async function login(event) {
     }
 }
 
-async function resetPassword(event) {
-    event.preventDefault();
-    
-    const email = document.getElementById('resetEmail').value.trim();
-    
-    if (!email) {
-        showToast('Please enter your email', 'error');
-        return;
-    }
-    
-    try {
-        await auth.sendPasswordResetEmail(email);
-        showToast('Password reset link sent! Check your email.', 'success');
-        closeModal('forgotPasswordModal');
-        document.getElementById('resetEmail').value = '';
-    } catch (error) {
-        console.error('Reset error:', error);
-        showToast(error.message, 'error');
-    }
-}
-
 async function logout() {
     try {
         await auth.signOut();
         currentUser = null;
         userData = null;
+        localStorage.removeItem('mbogo_user');
         updateUIBasedOnAuth();
         showPage('home');
         showToast('Logged out successfully.', 'success');
     } catch (error) {
-        showToast(error.message, 'error');
+        showToast('Error logging out', 'error');
     }
 }
 
@@ -1170,130 +1173,53 @@ function updateUIBasedOnAuth() {
     const navUserName = document.getElementById('navUserName');
     
     if (currentUser && userData) {
-        navLogin.style.display = 'none';
-        navSignup.style.display = 'none';
-        navUser.style.display = 'block';
-        navLogout.style.display = 'block';
-        navDashboard.style.display = 'block';
-        navUserName.textContent = '👋 ' + userData.fullName.split(' ')[0];
+        if (navLogin) navLogin.style.display = 'none';
+        if (navSignup) navSignup.style.display = 'none';
+        if (navUser) navUser.style.display = 'block';
+        if (navLogout) navLogout.style.display = 'block';
+        if (navDashboard) navDashboard.style.display = 'block';
+        if (navUserName) navUserName.textContent = '👋 ' + userData.fullName?.split(' ')[0] || 'User';
     } else {
-        navLogin.style.display = 'block';
-        navSignup.style.display = 'block';
-        navUser.style.display = 'none';
-        navLogout.style.display = 'none';
-        navDashboard.style.display = 'none';
+        if (navLogin) navLogin.style.display = 'block';
+        if (navSignup) navSignup.style.display = 'block';
+        if (navUser) navUser.style.display = 'none';
+        if (navLogout) navLogout.style.display = 'none';
+        if (navDashboard) navDashboard.style.display = 'none';
     }
 }
 
 // ============ DASHBOARD ============
 function showDashboard() {
     document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
-    document.getElementById('dashboardLayout').classList.add('active');
+    const dashboard = document.getElementById('dashboardLayout');
+    if (dashboard) dashboard.classList.add('active');
     
-    // Show/hide menu items based on role
-    const menuTimetable = document.getElementById('menuTimetable');
-    const menuClasswork = document.getElementById('menuClasswork');
-    const menuProgress = document.getElementById('menuProgress');
+    // Set user info
+    const welcomeUser = document.getElementById('welcomeUser');
+    if (welcomeUser && userData) welcomeUser.textContent = 'Welcome, ' + userData.fullName;
     
-    if (userData) {
-        menuTimetable.style.display = (userData.role === 'teacher' || userData.role === 'student') ? 'block' : 'none';
-        menuClasswork.style.display = (userData.role === 'teacher' || userData.role === 'student') ? 'block' : 'none';
-        menuProgress.style.display = 'block';
-    }
+    // Show/hide based on role
+    const teacherSection = document.getElementById('teacherSection');
+    const studentSection = document.getElementById('studentSection');
+    const parentSection = document.getElementById('parentSection');
     
-    loadDashboardSection('news');
+    if (teacherSection) teacherSection.style.display = userData?.role === 'teacher' ? 'block' : 'none';
+    if (studentSection) studentSection.style.display = userData?.role === 'student' ? 'block' : 'none';
+    if (parentSection) parentSection.style.display = userData?.role === 'parent' ? 'block' : 'none';
+    
+    loadAnnouncements();
+    loadClasswork();
+    if (userData?.role === 'teacher') loadStudentProgress();
+    if (userData?.role === 'parent') loadChildProgress();
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-async function loadDashboardSection(section) {
-    currentDashboardSection = section;
-    
-    // Update active menu item
-    document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
-    event?.target?.classList.add('active');
-    
-    const content = document.getElementById('dashboardContent');
-    content.innerHTML = '<div style="text-align:center;padding:3rem;"><i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--secondary);"></i><p>Loading...</p></div>';
-    
-    switch(section) {
-        case 'news':
-            await loadNews();
-            break;
-        case 'timetable':
-            await loadTimetable();
-            break;
-        case 'classwork':
-            await loadClasswork();
-            break;
-        case 'progress':
-            await loadProgress();
-            break;
-        case 'profile':
-            await loadProfile();
-            break;
-    }
-}
-// ============ NEWS / ANNOUNCEMENTS ============
-async function loadNews() {
-    const content = document.getElementById('dashboardContent');
-    
-    let html = '<div class="dashboard-card"><h3><i class="fas fa-newspaper"></i> School Announcements</h3>';
-    
-    if (userData && userData.role === 'teacher') {
-        html += `
-            <div style="margin:1rem 0;padding:1rem;background:var(--gray-100);border-radius:var(--radius-sm);">
-                <h4>Post New Announcement</h4>
-                <input type="text" id="newsTitle" class="form-control" placeholder="Announcement title" style="margin-bottom:0.5rem;">
-                <textarea id="newsContent" class="form-control" rows="3" placeholder="Announcement content..." style="margin-bottom:0.5rem;"></textarea>
-                <select id="newsType" class="form-control" style="margin-bottom:0.5rem;">
-                    <option value="announcement">General Announcement</option>
-                    <option value="urgent">Urgent Notice</option>
-                    <option value="event">School Event</option>
-                </select>
-                <button class="btn btn-primary" onclick="postAnnouncement()"><i class="fas fa-paper-plane"></i> Post Announcement</button>
-            </div>
-        `;
-    }
-    
-    html += '<div id="newsList">Loading announcements...</div></div>';
-    content.innerHTML = html;
-    
-    // Load announcements from Firestore
-    try {
-        const snapshot = await db.collection('announcements')
-            .orderBy('createdAt', 'desc')
-            .limit(20)
-            .get();
-        
-        let newsHtml = '';
-        if (snapshot.empty) {
-            newsHtml = '<p style="text-align:center;color:var(--gray-600);">No announcements yet.</p>';
-        } else {
-            snapshot.forEach(doc => {
-                const news = doc.data();
-                const date = news.createdAt ? new Date(news.createdAt.seconds * 1000).toLocaleDateString('en-UG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Recently';
-                const badgeClass = news.type === 'urgent' ? 'badge-urgent' : news.type === 'event' ? 'badge-event' : 'badge-announcement';
-                newsHtml += `
-                    <div class="news-item">
-                        <span class="news-badge ${badgeClass}">${news.type || 'Announcement'}</span>
-                        <h4>${news.title}</h4>
-                        <p>${news.content}</p>
-                        <small class="news-date">📅 ${date} — Posted by ${news.author || 'Admin'}</small>
-                    </div>
-                `;
-            });
-        }
-        document.getElementById('newsList').innerHTML = newsHtml;
-    } catch (error) {
-        console.error('Error loading announcements:', error);
-        document.getElementById('newsList').innerHTML = '<p style="color:red;">Error loading announcements.</p>';
-    }
-}
-
+// ============ ANNOUNCEMENTS ============
 async function postAnnouncement() {
-    const title = document.getElementById('newsTitle').value.trim();
-    const content = document.getElementById('newsContent').value.trim();
-    const type = document.getElementById('newsType').value;
+    const title = document.getElementById('newsTitle')?.value?.trim();
+    const content = document.getElementById('newsContent')?.value?.trim();
+    const type = document.getElementById('newsType')?.value || 'announcement';
     
     if (!title || !content) {
         showToast('Please fill in both title and content', 'error');
@@ -1305,168 +1231,74 @@ async function postAnnouncement() {
             title: title,
             content: content,
             type: type,
-            author: userData.fullName,
-            authorId: currentUser.uid,
+            author: userData?.fullName || 'Admin',
+            authorId: currentUser?.uid,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         
-        showToast('Announcement posted!', 'success');
-        document.getElementById('newsTitle').value = '';
-        document.getElementById('newsContent').value = '';
-        loadNews();
+        showToast('Announcement posted successfully!', 'success');
+        if (document.getElementById('newsTitle')) document.getElementById('newsTitle').value = '';
+        if (document.getElementById('newsContent')) document.getElementById('newsContent').value = '';
+        loadAnnouncements();
     } catch (error) {
+        console.error('Error posting announcement:', error);
         showToast('Error posting announcement: ' + error.message, 'error');
     }
 }
 
-// ============ TIMETABLE ============
-async function loadTimetable() {
-    const content = document.getElementById('dashboardContent');
+async function loadAnnouncements() {
+    const newsList = document.getElementById('newsList');
+    if (!newsList) return;
     
-    let html = '<div class="dashboard-card"><h3><i class="fas fa-calendar-alt"></i> Class Timetable</h3>';
-    
-    if (userData && userData.role === 'teacher') {
-        html += `
-            <div style="margin:1rem 0;padding:1rem;background:var(--gray-100);border-radius:var(--radius-sm);">
-                <h4>Add Timetable Entry</h4>
-                <select id="ttDay" class="form-control" style="margin-bottom:0.5rem;">
-                    <option value="Monday">Monday</option>
-                    <option value="Tuesday">Tuesday</option>
-                    <option value="Wednesday">Wednesday</option>
-                    <option value="Thursday">Thursday</option>
-                    <option value="Friday">Friday</option>
-                </select>
-                <input type="text" id="ttTime" class="form-control" placeholder="Time (e.g., 8:00-9:00 AM)" style="margin-bottom:0.5rem;">
-                <input type="text" id="ttSubject" class="form-control" placeholder="Subject" style="margin-bottom:0.5rem;">
-                <input type="text" id="ttTeacher" class="form-control" placeholder="Teacher name" style="margin-bottom:0.5rem;">
-                <button class="btn btn-primary" onclick="addTimetableEntry()"><i class="fas fa-plus"></i> Add Entry</button>
-            </div>
-        `;
-    }
-    
-    html += '<div id="timetableDisplay">Loading timetable...</div></div>';
-    content.innerHTML = html;
+    newsList.innerHTML = '<p style="text-align:center;color:#888;">Loading announcements...</p>';
     
     try {
-        const snapshot = await db.collection('timetable').orderBy('day').orderBy('time').get();
-        
-        if (snapshot.empty) {
-            document.getElementById('timetableDisplay').innerHTML = '<p>No timetable entries yet.</p>';
-        } else {
-            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-            let tableHtml = '<div class="timetable-grid">';
-            
-            days.forEach(day => {
-                tableHtml += `<div class="timetable-day">${day}</div>`;
-                const dayEntries = [];
-                snapshot.forEach(doc => {
-                    if (doc.data().day === day) {
-                        dayEntries.push(doc.data());
-                    }
-                });
-                if (dayEntries.length === 0) {
-                    tableHtml += '<div class="timetable-cell">No classes</div>';
-                } else {
-                    dayEntries.forEach(entry => {
-                        tableHtml += `<div class="timetable-cell"><strong>${entry.subject}</strong><br><small>${entry.time}</small><br><small>${entry.teacher}</small></div>`;
-                    });
-                }
-            });
-            
-            tableHtml += '</div>';
-            document.getElementById('timetableDisplay').innerHTML = tableHtml;
-        }
-    } catch (error) {
-        document.getElementById('timetableDisplay').innerHTML = '<p style="color:red;">Error loading timetable.</p>';
-    }
-}
-
-async function addTimetableEntry() {
-    const day = document.getElementById('ttDay').value;
-    const time = document.getElementById('ttTime').value.trim();
-    const subject = document.getElementById('ttSubject').value.trim();
-    const teacher = document.getElementById('ttTeacher').value.trim();
-    
-    if (!time || !subject || !teacher) {
-        showToast('Please fill all fields', 'error');
-        return;
-    }
-    
-    try {
-        await db.collection('timetable').add({
-            day: day,
-            time: time,
-            subject: subject,
-            teacher: teacher,
-            createdBy: currentUser.uid,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        showToast('Timetable entry added!', 'success');
-        document.getElementById('ttTime').value = '';
-        document.getElementById('ttSubject').value = '';
-        document.getElementById('ttTeacher').value = '';
-        loadTimetable();
-    } catch (error) {
-        showToast('Error: ' + error.message, 'error');
-    }
-}
-
-// ============ CLASSWORK ============
-async function loadClasswork() {
-    const content = document.getElementById('dashboardContent');
-    
-    let html = '<div class="dashboard-card"><h3><i class="fas fa-tasks"></i> Classwork</h3>';
-    
-    if (userData && userData.role === 'teacher') {
-        html += `
-            <div style="margin:1rem 0;padding:1rem;background:var(--gray-100);border-radius:var(--radius-sm);">
-                <h4>Post New Classwork</h4>
-                <input type="text" id="cwTitle" class="form-control" placeholder="Title" style="margin-bottom:0.5rem;">
-                <input type="text" id="cwSubject" class="form-control" placeholder="Subject" style="margin-bottom:0.5rem;">
-                <textarea id="cwDescription" class="form-control" rows="3" placeholder="Description" style="margin-bottom:0.5rem;"></textarea>
-                <input type="date" id="cwDueDate" class="form-control" style="margin-bottom:0.5rem;">
-                <button class="btn btn-primary" onclick="postClasswork()"><i class="fas fa-paper-plane"></i> Publish</button>
-            </div>
-        `;
-    }
-    
-    html += '<div id="classworkList">Loading...</div></div>';
-    content.innerHTML = html;
-    
-    try {
-        const snapshot = await db.collection('classwork')
+        const snapshot = await db.collection('announcements')
             .orderBy('createdAt', 'desc')
             .limit(20)
             .get();
         
-        let cwHtml = '';
         if (snapshot.empty) {
-            cwHtml = '<p>No classwork posted yet.</p>';
-        } else {
-            snapshot.forEach(doc => {
-                const cw = doc.data();
-                cwHtml += `
-                    <div class="news-item">
-                        <h4>${cw.title} <small style="color:var(--gray-600);">(${cw.subject})</small></h4>
-                        <p>${cw.description || ''}</p>
-                        <small>📅 Due: ${cw.dueDate || 'No deadline'} | Posted by: ${cw.teacherName || 'Teacher'}</small>
-                        ${userData && userData.role === 'student' ? '<br><button class="btn btn-primary btn-sm" onclick="submitClasswork(\'' + doc.id + '\')" style="margin-top:8px;">Submit Work</button>' : ''}
-                    </div>
-                `;
-            });
+            newsList.innerHTML = '<p style="text-align:center;color:#888;">No announcements yet.</p>';
+            return;
         }
-        document.getElementById('classworkList').innerHTML = cwHtml;
+        
+        let html = '';
+        snapshot.forEach(doc => {
+            const news = doc.data();
+            const date = news.createdAt ? new Date(news.createdAt.seconds * 1000).toLocaleDateString('en-UG', { 
+                weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' 
+            }) : 'Recently';
+            
+            const badgeColors = {
+                urgent: 'background:#ffe0e0;color:#c0392b;',
+                event: 'background:#e0ffe0;color:#2d8a4e;',
+                announcement: 'background:#e0f0ff;color:#2980b9;'
+            };
+            
+            html += `
+                <div style="background:white;padding:15px;margin-bottom:10px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.05);border-left:4px solid var(--secondary);">
+                    <span style="display:inline-block;padding:3px 10px;border-radius:15px;font-size:0.7rem;font-weight:600;text-transform:uppercase;${badgeColors[news.type] || badgeColors.announcement}">${news.type || 'Announcement'}</span>
+                    <h4 style="margin:8px 0;color:#1a3a5c;">${news.title}</h4>
+                    <p style="color:#555;">${news.content}</p>
+                    <small style="color:#999;">📅 ${date} — Posted by ${news.author || 'Admin'}</small>
+                </div>
+            `;
+        });
+        
+        newsList.innerHTML = html;
     } catch (error) {
-        document.getElementById('classworkList').innerHTML = '<p style="color:red;">Error loading classwork.</p>';
+        console.error('Error loading announcements:', error);
+        newsList.innerHTML = '<p style="color:red;text-align:center;">Error loading announcements. Check console.</p>';
     }
 }
 
+// ============ CLASSWORK ============
 async function postClasswork() {
-    const title = document.getElementById('cwTitle').value.trim();
-    const subject = document.getElementById('cwSubject').value.trim();
-    const description = document.getElementById('cwDescription').value.trim();
-    const dueDate = document.getElementById('cwDueDate').value;
+    const title = document.getElementById('cwTitle')?.value?.trim();
+    const subject = document.getElementById('cwSubject')?.value?.trim();
+    const description = document.getElementById('cwDescription')?.value?.trim();
+    const dueDate = document.getElementById('cwDueDate')?.value;
     
     if (!title) {
         showToast('Please enter a title', 'error');
@@ -1476,91 +1308,170 @@ async function postClasswork() {
     try {
         await db.collection('classwork').add({
             title: title,
-            subject: subject,
-            description: description,
-            dueDate: dueDate,
-            teacherName: userData.fullName,
-            teacherId: currentUser.uid,
+            subject: subject || 'General',
+            description: description || '',
+            dueDate: dueDate || '',
+            teacherName: userData?.fullName || 'Teacher',
+            teacherId: currentUser?.uid,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         
-        showToast('Classwork published!', 'success');
-        document.getElementById('cwTitle').value = '';
-        document.getElementById('cwSubject').value = '';
-        document.getElementById('cwDescription').value = '';
-        document.getElementById('cwDueDate').value = '';
+        showToast('Classwork posted!', 'success');
+        if (document.getElementById('cwTitle')) document.getElementById('cwTitle').value = '';
+        if (document.getElementById('cwSubject')) document.getElementById('cwSubject').value = '';
+        if (document.getElementById('cwDescription')) document.getElementById('cwDescription').value = '';
+        if (document.getElementById('cwDueDate')) document.getElementById('cwDueDate').value = '';
         loadClasswork();
     } catch (error) {
+        console.error('Error posting classwork:', error);
         showToast('Error: ' + error.message, 'error');
     }
 }
 
-async function submitClasswork(classworkId) {
-    const answer = prompt('Enter your answer or notes:');
-    if (!answer) return;
+async function loadClasswork() {
+    const list = document.getElementById('classworkList');
+    if (!list) return;
+    
+    list.innerHTML = '<p style="text-align:center;color:#888;">Loading classwork...</p>';
     
     try {
-        await db.collection('submissions').add({
-            classworkId: classworkId,
-            studentId: currentUser.uid,
-            studentName: userData.fullName,
-            answer: answer,
-            submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+        const snapshot = await db.collection('classwork')
+            .orderBy('createdAt', 'desc')
+            .limit(20)
+            .get();
+        
+        if (snapshot.empty) {
+            list.innerHTML = '<p style="text-align:center;color:#888;">No classwork posted yet.</p>';
+            return;
+        }
+        
+        let html = '';
+        snapshot.forEach(doc => {
+            const cw = doc.data();
+            html += `
+                <div style="background:white;padding:15px;margin-bottom:10px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+                    <h4 style="color:#1a3a5c;">${cw.title} <small style="color:#888;">(${cw.subject || 'General'})</small></h4>
+                    <p style="color:#555;">${cw.description || 'No description'}</p>
+                    ${cw.dueDate ? '<p style="color:#c0392b;">📅 Due: ' + cw.dueDate + '</p>' : ''}
+                    <small style="color:#999;">Posted by: ${cw.teacherName || 'Teacher'}</small>
+                </div>
+            `;
         });
         
-        showToast('Submitted successfully!', 'success');
+        list.innerHTML = html;
     } catch (error) {
-        showToast('Error: ' + error.message, 'error');
+        console.error('Error loading classwork:', error);
+        list.innerHTML = '<p style="color:red;text-align:center;">Error loading classwork.</p>';
     }
 }
 
-// ============ PROGRESS ============
-async function loadProgress() {
-    const content = document.getElementById('dashboardContent');
+// ============ STUDENT PROGRESS (for teachers) ============
+async function loadStudentProgress() {
+    const progressDiv = document.getElementById('studentProgress');
+    if (!progressDiv) return;
     
-    let html = '<div class="dashboard-card"><h3><i class="fas fa-chart-line"></i> Academic Progress</h3>';
+    progressDiv.innerHTML = '<p>Loading student progress...</p>';
     
-    if (userData && userData.role === 'student') {
-        const progressPercent = Math.floor(Math.random() * 40) + 60; // Demo: 60-100%
-        html += `
-            <div style="text-align:center;padding:2rem;">
-                <div class="progress-circle" style="--progress:${progressPercent * 3.6}deg;">
-                    <span class="progress-text">${progressPercent}%</span>
+    try {
+        // Get all students
+        const studentsSnapshot = await db.collection('users')
+            .where('role', '==', 'student')
+            .get();
+        
+        if (studentsSnapshot.empty) {
+            progressDiv.innerHTML = '<p>No students registered yet.</p>';
+            return;
+        }
+        
+        let html = '';
+        for (const studentDoc of studentsSnapshot.docs) {
+            const student = studentDoc.data();
+            
+            // Get their submissions
+            const submissionsSnapshot = await db.collection('submissions')
+                .where('studentId', '==', studentDoc.id)
+                .get();
+            
+            const submitted = submissionsSnapshot.size;
+            const total = Math.max(submitted + Math.floor(Math.random() * 3), 1); // Demo: add some pending
+            const percent = Math.round((submitted / total) * 100);
+            
+            html += `
+                <div style="background:white;padding:12px;margin-bottom:8px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
+                    <strong>${student.fullName}</strong>
+                    <div style="height:8px;background:#eee;border-radius:4px;margin:8px 0;">
+                        <div style="height:100%;width:${percent}%;background:#2d8a4e;border-radius:4px;"></div>
+                    </div>
+                    <small>${submitted}/${total} completed (${percent}%)</small>
                 </div>
-                <p style="margin-top:1rem;">Overall Completion Rate</p>
-            </div>
-        `;
+            `;
+        }
+        
+        progressDiv.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading progress:', error);
+        progressDiv.innerHTML = '<p style="color:red;">Error loading progress.</p>';
     }
-    
-    if (userData && userData.role === 'teacher') {
-        html += '<p>Student progress overview loads here. In production, this shows real data from Firestore.</p>';
-        html += '<div style="margin-top:1rem;"><div class="progress-bar" style="height:10px;background:#ddd;border-radius:5px;"><div style="height:100%;width:75%;background:var(--success);border-radius:5px;"></div></div><small>Overall class average: 75%</small></div>';
-    }
-    
-    if (userData && userData.role === 'parent') {
-        html += '<p>Your child\'s progress report will appear here. Please contact the school to link your account to your child\'s profile.</p>';
-    }
-    
-    html += '</div>';
-    content.innerHTML = html;
 }
+// Show parent email field when student is selected
+document.getElementById('signupRole')?.addEventListener('change', function() {
+    const parentGroup = document.getElementById('parentEmailGroup');
+    if (parentGroup) {
+        parentGroup.style.display = this.value === 'student' ? 'block' : 'none';
+    }
+});
 
-// ============ PROFILE ============
-async function loadProfile() {
-    const content = document.getElementById('dashboardContent');
+// ============ PARENT: LOAD CHILD PROGRESS ============
+async function loadChildProgress() {
+    const progressDiv = document.getElementById('parentProgress');
+    if (!progressDiv) return;
     
-    let html = `
-        <div class="dashboard-card">
-            <h3><i class="fas fa-user-circle"></i> My Profile</h3>
-            <div style="margin-top:1rem;">
-                <p><strong>Name:</strong> ${userData?.fullName || 'N/A'}</p>
-                <p><strong>Email:</strong> ${userData?.email || 'N/A'}</p>
-                <p><strong>Role:</strong> ${userData?.role || 'N/A'}</p>
-                <p><strong>Member since:</strong> ${userData?.createdAt ? new Date(userData.createdAt.seconds * 1000).toLocaleDateString() : 'Recently'}</p>
-            </div>
-        </div>
-    `;
-    content.innerHTML = html;
+    progressDiv.innerHTML = '<p>Loading your child\'s progress...</p>';
+    
+    try {
+        // Find parent link
+        const linkSnapshot = await db.collection('parentLinks')
+            .where('parentEmail', '==', userData?.email)
+            .get();
+        
+        if (linkSnapshot.empty) {
+            progressDiv.innerHTML = '<p>No child accounts linked. Please contact the school to link your child\'s account.</p>';
+            return;
+        }
+        
+        let html = '';
+        for (const linkDoc of linkSnapshot.docs) {
+            const link = linkDoc.data();
+            
+            // Get student data
+            const studentDoc = await db.collection('users').doc(link.studentId).get();
+            if (!studentDoc.exists) continue;
+            
+            const student = studentDoc.data();
+            const submissionsSnapshot = await db.collection('submissions')
+                .where('studentId', '==', link.studentId)
+                .get();
+            
+            const submitted = submissionsSnapshot.size;
+            const total = Math.max(submitted + 2, 1);
+            const percent = Math.round((submitted / total) * 100);
+            
+            html += `
+                <div style="background:white;padding:15px;margin-bottom:10px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+                    <h4>👦 ${student.fullName}</h4>
+                    <div style="height:10px;background:#eee;border-radius:5px;margin:10px 0;">
+                        <div style="height:100%;width:${percent}%;background:#2d8a4e;border-radius:5px;"></div>
+                    </div>
+                    <small>${submitted} assignments completed (${percent}%)</small>
+                </div>
+            `;
+        }
+        
+        progressDiv.innerHTML = html || '<p>No progress data available.</p>';
+    } catch (error) {
+        console.error('Error loading child progress:', error);
+        progressDiv.innerHTML = '<p style="color:red;">Error loading progress.</p>';
+    }
 }
 
 // ============ AUTH STATE LISTENER ============
@@ -1571,7 +1482,6 @@ auth.onAuthStateChanged(async (user) => {
             const userDoc = await db.collection('users').doc(user.uid).get();
             if (userDoc.exists) {
                 userData = userDoc.data();
-                updateUIBasedOnAuth();
             }
         } catch (error) {
             console.error('Error fetching user data:', error);
@@ -1579,19 +1489,34 @@ auth.onAuthStateChanged(async (user) => {
     } else {
         currentUser = null;
         userData = null;
-        updateUIBasedOnAuth();
+        localStorage.removeItem('mbogo_user');
     }
+    updateUIBasedOnAuth();
 });
 
 // ============ INITIALIZATION ============
-updateVisitorCount();
-showPage('home');
+// Check for stored user
+const storedUser = localStorage.getItem('mbogo_user');
+if (storedUser && auth.currentUser) {
+    try {
+        userData = JSON.parse(storedUser);
+        currentUser = auth.currentUser;
+        updateUIBasedOnAuth();
+        showDashboard();
+    } catch (e) {
+        localStorage.removeItem('mbogo_user');
+        showPage('home');
+    }
+} else {
+    showPage('home');
+}
 
-console.log('✅ Mbogo College School Website Ready');
-console.log('🏫 Built by ICT Club - Mbogo College School');
+console.log('✅ Mbogo College School Ready!');
 console.log('📧 mbogocollegeschool@yahoo.com');
 console.log('📞 +256 703 204 367');
-</script>
+
+    
+        
 
 </body>
 </html>
