@@ -12,8 +12,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-‎
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js">
+</script>
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -970,15 +971,19 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
+let auth;
+let db;
+let storage;
+
 try {
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const storage = firebase.storage();
-    console.log('✅ Firebase connected successfully!');
+    auth = firebase.auth();
+    db = firebase.firestore();
+    storage = firebase.storage();
+    console.log('✅ Firebase connected!');
 } catch (error) {
-    console.error('❌ Firebase connection error:', error);
-}
+    console.error('❌ Firebase error:', error);
+
 // ============ GLOBAL STATE ============
 let currentUser = null;
 let userData = null;
