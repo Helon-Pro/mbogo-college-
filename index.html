@@ -966,17 +966,12 @@ const firebaseConfig = {
     messagingSenderId: "66126002537",
     appId: "1:66126002537:web:9187261918ae640d9465f8"
 };
-
 // Initialize Firebase
-try {
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const storage = firebase.storage();
-    console.log('✅ Firebase connected successfully!');
-} catch (error) {
-    console.error('❌ Firebase connection error:', error);
-}
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+console.log('Firebase connected!');
 
 // ============ GLOBAL STATE ============
 let currentUser = null;
