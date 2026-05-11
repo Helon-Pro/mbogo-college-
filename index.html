@@ -1035,7 +1035,7 @@ async function signup(event) {
     const role = document.getElementById('signupRole')?.value;
     const parentEmail = document.getElementById('parentEmail')?.value?.trim();
     
-    // Validation
+    // Basic validation
     if (!name || !email || !password || !role) {
         showToast('Please fill all required fields', 'error');
         return;
@@ -1051,10 +1051,36 @@ async function signup(event) {
         return;
     }
     
-    // Email validation
+    // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         showToast('Please enter a valid email address', 'error');
+        return;
+    }
+    
+    // Block disposable/temporary email domains
+    const blockedDomains = [
+        'mailinator.com', 'tempmail.com', 'tempmail.org', 'throwaway.com',
+        'guerrillamail.com', 'guerrillamail.org', '10minutemail.com',
+        'yopmail.com', 'yopmail.org', 'sharklasers.com', 'trashmail.com',
+        'fakeinbox.com', 'temp-mail.org', 'temp-mail.com', 'dispostable.com',
+        'maildrop.cc', 'getnada.com', 'throwaway.email', 'mailnesia.com',
+        'spamgourmet.com', '33mail.com', 'trash-can-mail.com',
+        'mt2014.com', 'mt2015.com', 'mt2016.com', 'thanksnospam.com',
+        'noblepioneer.com', 'shivemail.com', 'bcaoo.com'
+    ];
+    
+    const emailDomain = email.split('@')[1]?.toLowerCase();
+    if (blockedDomains.includes(emailDomain)) {
+        showToast('Please use a real email address (Gmail, Yahoo, Outlook, etc.). Temporary emails are not allowed.', 'error');
+        return;
+    }
+    
+    // Check for obviously fake patterns
+    const suspiciousPatterns = ['test', 'fake', 'spam', 'noreply', 'no-reply', 'dummy'];
+    const emailUsername = email.split('@')[0]?.toLowerCase();
+    if (suspiciousPatterns.some(pattern => emailUsername.includes(pattern))) {
+        showToast('Please enter your real email address.', 'warning');
         return;
     }
     
@@ -1069,11 +1095,17 @@ async function signup(event) {
             email: email,
             role: role,
             parentEmail: parentEmail || null,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            verified: true
+            emailVerified: false,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         
         await db.collection('users').doc(user.uid).set(userDoc);
+        
+        // Send email verification
+        await user.sendEmailVerification({
+            url: 'https://helon-pro.github.io/mbogo-college-/',
+            handleCodeInApp: false
+        });
         
         // If student has parent email, create link
         if (role === 'student' && parentEmail) {
@@ -1085,26 +1117,18 @@ async function signup(event) {
             });
         }
         
-        // Set current user
-        currentUser = user;
-        userData = userDoc;
-        localStorage.setItem('mbogo_user', JSON.stringify(userDoc));
-        
-        showToast('Account created successfully! Welcome, ' + name + '!', 'success');
+        showToast('Account created! Please check your email (including spam folder) to verify your account before logging in.', 'success');
         closeModal('signupModal');
-        updateUIBasedOnAuth();
-        showDashboard();
         
     } catch (error) {
         console.error('Signup error:', error);
         let message = error.message;
         if (error.code === 'auth/email-already-in-use') message = 'This email is already registered. Please login instead.';
         if (error.code === 'auth/invalid-email') message = 'Please enter a valid email address.';
-        if (error.code === 'auth/weak-password') message = 'Password is too weak. Use at least 8 characters.';
+        if (error.code === 'auth/weak-password') message = 'Password is too weak. Use at least 8 characters with numbers and letters.';
         showToast(message, 'error');
     }
 }
-
 async function login(event) {
     event.preventDefault();
     
@@ -1120,11 +1144,24 @@ async function login(event) {
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
         
+        // Check if email is verified
+        if (!user.emailVerified) {
+            showToast('Please verify your email first. Check your inbox or spam folder for the verification link.', 'warning');
+            await auth.signOut();
+            return;
+        }
+        
         // Get user data from Firestore
         const userDoc = await db.collection('users').doc(user.uid).get();
         
         if (userDoc.exists) {
             userData = userDoc.data();
+            // Update email verified status
+            if (!userData.emailVerified) {
+                await db.collection('users').doc(user.uid).update({
+                    emailVerified: true
+                });
+            }
         } else {
             userData = { fullName: user.email, email: user.email, role: 'student' };
         }
@@ -1132,7 +1169,7 @@ async function login(event) {
         currentUser = user;
         localStorage.setItem('mbogo_user', JSON.stringify(userData));
         
-        showToast('Welcome back, ' + userData.fullName?.split(' ')[0] + '!', 'success');
+        showToast('Welcome back, ' + (userData.fullName?.split(' ')[0] || 'User') + '!', 'success');
         closeModal('loginModal');
         updateUIBasedOnAuth();
         showDashboard();
@@ -1140,9 +1177,10 @@ async function login(event) {
     } catch (error) {
         console.error('Login error:', error);
         let message = error.message;
-        if (error.code === 'auth/user-not-found') message = 'No account found with this email.';
-        if (error.code === 'auth/wrong-password') message = 'Incorrect password.';
+        if (error.code === 'auth/user-not-found') message = 'No account found with this email. Please sign up first.';
+        if (error.code === 'auth/wrong-password') message = 'Incorrect password. Please try again.';
         if (error.code === 'auth/invalid-email') message = 'Invalid email address.';
+        if (error.code === 'auth/too-many-requests') message = 'Too many attempts. Please try again later.';
         showToast(message, 'error');
     }
 }
