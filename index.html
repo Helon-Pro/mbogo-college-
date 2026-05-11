@@ -575,6 +575,7 @@
   </div>
 
   <!-- DASHBOARD -->
+loadClasswork(); 
   <div id="dashboardContainer" class="dashboard">
     <div class="dashboard-header">
       <h2><i class="fas fa-tachometer-alt"></i> <span id="dashboardTitle">Dashboard</span></h2>
@@ -713,6 +714,88 @@ const db = firebase.firestore();
     }
 
     // ============ AUTHENTICATION ============
+async function signup(event) {
+  event.preventDefault();
+  
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const password = document.getElementById('signupPassword').value;
+  const role = document.getElementById('signupRole').value;
+
+  if (!name || !email || !password) {
+    showToast('Please fill all fields', 'error');
+    return;
+  }
+
+  try {
+    // Check if email already exists
+    const snapshot = await db.collection('users').where('email', '==', email).get();
+    if (!snapshot.empty) {
+      showToast('Email already registered!', 'error');
+      return;
+    }
+
+    // Create user in Firestore
+    const docRef = await db.collection('users').add({
+      full_name: name,
+      email: email,
+      password: btoa(password),
+      role: role,
+      created_at: new Date().toISOString()
+    });
+
+    currentUser = {
+      id: docRef.id,
+      full_name: name,
+      email: email,
+      role: role
+    };
+
+    localStorage.setItem('mbogo_currentUser', JSON.stringify(currentUser));
+    closeModal('signupModal');
+    updateUIForLoggedInUser();
+    showDashboard();
+    showToast('Account created! Welcome, ' + name + '!', 'success');
+  } catch (error) {
+    showToast('Error: ' + error.message, 'error');
+  }
+}async function login(event) {
+  event.preventDefault();
+  
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+
+  if (!email || !password) {
+    showToast('Please fill all fields', 'error');
+    return;
+  }
+
+  try {
+    const snapshot = await db.collection('users')
+      .where('email', '==', email)
+      .where('password', '==', btoa(password))
+      .get();
+
+    if (snapshot.empty) {
+      showToast('Invalid email or password!', 'error');
+      return;
+    }
+
+    const doc = snapshot.docs[0];
+    currentUser = {
+      id: doc.id,
+      ...doc.data()
+    };
+
+    localStorage.setItem('mbogo_currentUser', JSON.stringify(currentUser));
+    closeModal('loginModal');
+    updateUIForLoggedInUser();
+    showDashboard();
+    showToast('Welcome back, ' + currentUser.full_name.split(' ')[0] + '!', 'success');
+  } catch (error) {
+    showToast('Error: ' + error.message, 'error');
+  }
+}
     function signup(event) {
       event.preventDefault();
       
@@ -823,176 +906,106 @@ const db = firebase.firestore();
     }
 
     // ============ CLASSWORK OPERATIONS ============
-    function createClasswork() {
-      if (!currentUser || currentUser.role !== 'teacher') return;
+async function createClasswork() {
+  if (!currentUser || currentUser.role !== 'teacher') return;
 
-      const title = document.getElementById('cwTitle').value.trim();
-      const subject = document.getElementById('cwSubject').value.trim();
-      const description = document.getElementById('cwDescription').value.trim();
-      const dueDate = document.getElementById('cwDueDate').value;
+  const title = document.getElementById('cwTitle').value.trim();
+  const subject = document.getElementById('cwSubject').value.trim();
+  const description = document.getElementById('cwDescription').value.trim();
 
-      if (!title) {
-        showToast('Please enter a title for the classwork.', 'warning');
-        return;
-      }
+  if (!title) {
+    showToast('Please enter a title', 'warning');
+    return;
+  }
 
-      const db = getDB();
-      db.classwork.push({
-        id: Date.now(),
-        teacher_id: currentUser.id,
-        teacher_name: currentUser.full_name,
-        title: title,
-        subject: subject,
-        description: description,
-        due_date: dueDate,
-        created_at: new Date().toISOString(),
-        submission_count: 0
-      });
-      saveDB(db);
+  try {
+    await db.collection('classwork').add({
+      teacher_id: currentUser.id,
+      teacher_name: currentUser.full_name,
+      title: title,
+      subject: subject,
+      description: description,
+      created_at: new Date().toISOString()
+    });
 
-      document.getElementById('cwTitle').value = '';
-      document.getElementById('cwSubject').value = '';
-      document.getElementById('cwDescription').value = '';
-      document.getElementById('cwDueDate').value = '';
+    document.getElementById('cwTitle').value = '';
+    document.getElementById('cwSubject').value = '';
+    document.getElementById('cwDescription').value = '';
+    showToast('Classwork published!', 'success');
+    loadClasswork();
+  } catch (error) {
+    showToast('Error: ' + error.message, 'error');
+  }
+}
+    async function loadClasswork() {
+  if (!currentUser) return;
 
-      showToast('Classwork published successfully!', 'success');
-      loadTeacherClasswork();
-      loadStudentProgress();
-    }
+  try {
+    const snapshot = await db.collection('classwork').orderBy('created_at', 'desc').get();
+    const classwork = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    function loadTeacherClasswork() {
-      const db = getDB();
+    if (currentUser.role === 'teacher') {
       const list = document.getElementById('teacherClassworkList');
+      const myCw = classwork.filter(cw => cw.teacher_id === currentUser.id);
       
-      if (!currentUser || currentUser.role !== 'teacher') return;
-      
-      const myClasswork = db.classwork.filter(cw => cw.teacher_id === currentUser.id);
-      
-      if (myClasswork.length === 0) {
+      if (myCw.length === 0) {
         list.innerHTML = '<p>No classwork posted yet.</p>';
         return;
       }
-
-      list.innerHTML = myClasswork.sort((a, b) => b.id - a.id).map(cw => {
-        const submissions = db.submissions.filter(s => s.classwork_id === cw.id).length;
-        return `
-          <div class="classwork-item">
-            <div>
-              <strong>${cw.title}</strong>
-              ${cw.subject ? '<span class="subject-badge">' + cw.subject + '</span>' : ''}
-              <br/>
-              <small>${cw.description || 'No description'}</small>
-              ${cw.due_date ? '<br/><small>Due: ' + cw.due_date + '</small>' : ''}
-            </div>
-            <div>
-              <small>${submissions} submissions</small>
-              <br/>
-              <small>Posted: ${new Date(cw.created_at).toLocaleDateString()}</small>
-            </div>
+      
+      list.innerHTML = myCw.map(cw => `
+        <div class="classwork-item">
+          <div>
+            <strong>${cw.title}</strong>
+            ${cw.subject ? '<span class="subject-badge">' + cw.subject + '</span>' : ''}
+            <br/><small>${cw.description || ''}</small>
           </div>
-        `;
-      }).join('');
-    }
-
-    function loadStudentClasswork() {
-      const db = getDB();
+          <small>Posted: ${new Date(cw.created_at).toLocaleDateString()}</small>
+        </div>
+      `).join('');
+    } else {
       const list = document.getElementById('studentClassworkList');
       
-      if (db.classwork.length === 0) {
+      if (classwork.length === 0) {
         list.innerHTML = '<p>No classwork available yet.</p>';
         return;
       }
-
-      list.innerHTML = db.classwork.sort((a, b) => b.id - a.id).map(cw => {
-        const submission = db.submissions.find(
-          s => s.classwork_id === cw.id && s.student_id === currentUser?.id
-        );
-        
-        return `
-          <div class="classwork-item">
-            <div>
-              <strong>${cw.title}</strong>
-              ${cw.subject ? '<span class="subject-badge">' + cw.subject + '</span>' : ''}
-              <br/>
-              <small>Teacher: ${cw.teacher_name}</small>
-              <br/>
-              <small>${cw.description || ''}</small>
-              ${cw.due_date ? '<br/><small>Due: ' + cw.due_date + '</small>' : ''}
-            </div>
-            <div>
-              ${submission ? 
-                '<span class="status-submitted"><i class="fas fa-check-circle"></i> Submitted</span>' : 
-                '<span class="status-pending"><i class="fas fa-exclamation-circle"></i> Pending</span>'
-              }
-              ${!submission && currentUser ? 
-                '<br/><button class="btn-login" onclick="submitClasswork(' + cw.id + ')" style="font-size:0.8rem;">Submit</button>' : ''
-              }
-            </div>
+      
+      list.innerHTML = classwork.map(cw => `
+        <div class="classwork-item">
+          <div>
+            <strong>${cw.title}</strong>
+            ${cw.subject ? '<span class="subject-badge">' + cw.subject + '</span>' : ''}
+            <br/><small>Teacher: ${cw.teacher_name}</small>
+            <br/><small>${cw.description || ''}</small>
           </div>
-        `;
-      }).join('');
+          <button class="btn-login" onclick="submitClasswork('${cw.id}')" style="font-size:0.8rem;">Submit</button>
+        </div>
+      `).join('');
     }
+  } catch (error) {
+    console.error('Error loading classwork:', error);
+  }
+}async function submitClasswork(classworkId) {
+  if (!currentUser) return;
 
-    function submitClasswork(classworkId) {
-      if (!currentUser) return;
-      
-      const answer = prompt('Enter your answer:');
-      
-      if (!answer) {
-        showToast('Submission cancelled.', 'warning');
-        return;
-      }
+  const answer = prompt('Enter your answer:');
+  if (!answer) return;
 
-      const db = getDB();
-      
-      db.submissions = db.submissions.filter(
-        s => !(s.classwork_id === classworkId && s.student_id === currentUser.id)
-      );
-      
-      db.submissions.push({
-        id: Date.now(),
-        classwork_id: classworkId,
-        student_id: currentUser.id,
-        student_name: currentUser.full_name,
-        answer: answer,
-        submitted_at: new Date().toISOString()
-      });
-      saveDB(db);
-
-      showToast('Classwork submitted successfully!', 'success');
-      loadStudentClasswork();
-    }
-
-    function loadStudentProgress() {
-      if (!currentUser || currentUser.role !== 'teacher') return;
-      
-      const db = getDB();
-      const students = db.users.filter(u => u.role === 'student');
-      const myClasswork = db.classwork.filter(cw => cw.teacher_id === currentUser.id);
-      
-      const progressDiv = document.getElementById('studentProgress');
-      
-      if (students.length === 0) {
-        progressDiv.innerHTML = '<p>No students registered yet.</p>';
-        return;
-      }
-
-      progressDiv.innerHTML = students.map(student => {
-        const submitted = db.submissions.filter(
-          s => s.student_id === student.id && 
-          myClasswork.some(cw => cw.id === s.classwork_id)
-        ).length;
-        const total = myClasswork.length || 1;
-        const percent = Math.round((submitted / total) * 100);
-        
-        return `
-          <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-            <strong>${student.full_name}</strong>
-            <div class="progress-bar" style="margin: 0.5rem 0;">
-              <div class="progress-fill" style="width: ${percent}%;"></div>
-            </div>
-            <small>${submitted}/${total} completed (${percent}%)</small>
-          </div>
+  try {
+    await db.collection('submissions').add({
+      classwork_id: classworkId,
+      student_id: currentUser.id,
+      student_name: currentUser.full_name,
+      answer: answer,
+      submitted_at: new Date().toISOString()
+    });
+    showToast('Submitted successfully!', 'success');
+    loadClasswork();
+  } catch (error) {
+    showToast('Error: ' + error.message, 'error');
+  }
+}
         `;
       }).join('');
     }
@@ -1071,7 +1084,7 @@ const db = firebase.firestore();
       
       db.users.push({
         id: 1001,
-        full_name: 'Mr. Robert Sseguya',
+        full_name: 'Mr.Kaddu Juma',
         email: 'teacher@mbogo.sc.ug',
         password: btoa('Teacher@123'),
         role: 'teacher',
@@ -1080,7 +1093,7 @@ const db = firebase.firestore();
       
       db.users.push({
         id: 1002,
-        full_name: 'Nakamya Grace',
+        full_name: 'Nanyanzi Elizabeth',
         email: 'student@mbogo.sc.ug',
         password: btoa('Student@123'),
         role: 'student',
@@ -1090,7 +1103,7 @@ const db = firebase.firestore();
       db.classwork.push({
         id: 2001,
         teacher_id: 1001,
-        teacher_name: 'Mr. Robert Sseguya',
+        teacher_name: 'Mr. Kibuya Fredrick A',
         title: 'Mathematics Exercise 1',
         subject: 'Mathematics',
         description: 'Solve problems 1-10 on page 45 of your textbook.',
@@ -1102,7 +1115,7 @@ const db = firebase.firestore();
       db.classwork.push({
         id: 2002,
         teacher_id: 1001,
-        teacher_name: 'Mr. Robert Sseguya',
+        teacher_name: 'Mr. Kato Hussein',
         title: 'Biology Quiz - Cell Structure',
         subject: 'Biology',
         description: 'Draw and label the parts of a plant cell.',
