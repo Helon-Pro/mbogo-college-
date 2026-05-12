@@ -1266,28 +1266,63 @@ function updateUIBasedOnAuth() {
 
 // ============ DASHBOARD ============
 // ============ TIMETABLE ============
-async function loadTimetable() {
+function loadTimetable() {
     const content = document.getElementById('dashboardContent');
     if (!content) return;
     
     let html = '<h3>📅 Class Timetable</h3>';
     
-    // Teacher form - always show for testing
+    // Teacher form
     html += `
         <div style="background:#e8f4e8;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #2d8a4e;">
-            <h4 style="color:#2d8a4e;">➕ Add New Timetable Entry</h4>
+            <h4>➕ Add Timetable Entry</h4>
             <select id="ttDay" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
                 <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
                 <option>Thursday</option><option>Friday</option>
             </select>
             <input type="text" id="ttTime" placeholder="Time (e.g., 8:00-9:00 AM)" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-            <input type="text" id="ttSubject" placeholder="Subject (e.g., Mathematics)" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+            <input type="text" id="ttSubject" placeholder="Subject" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
             <input type="text" id="ttTeacher" placeholder="Teacher name" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-            <button onclick="addTimetable()" style="background:#2d8a4e;color:white;padding:12px 25px;border:none;border-radius:25px;font-size:16px;width:100%;">✅ Save to Timetable</button>
+            <button onclick="addTimetable()" style="background:#2d8a4e;color:white;padding:10px 20px;border:none;border-radius:25px;">Save</button>
         </div>
     `;
     
-    html += '<div id="timetableList">Loading...</div>';
+    html += '<div id="ttList">Loading...</div>';
+    content.innerHTML = html;
+    
+    // Load data using then()
+    db.collection('timetable').get()
+        .then(snapshot => {
+            const list = document.getElementById('ttList');
+            if (!list) return;
+            
+            console.log('Timetable docs found:', snapshot.size);
+            
+            if (snapshot.empty) {
+                list.innerHTML = '<p style="color:#888;">No timetable entries yet.</p>';
+                return;
+            }
+            
+            let items = '';
+            snapshot.forEach(doc => {
+                const t = doc.data();
+                console.log('Document data:', t);
+                items += `
+                    <div style="background:white;padding:12px;margin:5px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                        <strong>${t.day || 'N/A'}</strong>
+                        <p>📖 ${t.subject || 'N/A'}</p>
+                        <small>⏰ ${t.time || 'N/A'}</small><br>
+                        <small>👨‍🏫 ${t.teacher || 'N/A'}</small>
+                    </div>
+                `;
+            });
+            list.innerHTML = items;
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            document.getElementById('ttList').innerHTML = '<p style="color:red;">Error: ' + err.message + '</p>';
+        });
+}   html += '<div id="timetableList">Loading...</div>';
     content.innerHTML = html;
     
     // Load existing entries
@@ -1359,7 +1394,7 @@ snapshot.forEach(doc => {
     `;
 });
 // ============ CLASSWORK ============
-async function loadClasswork() {
+function loadClasswork() {
     const content = document.getElementById('dashboardContent');
     if (!content) return;
     
@@ -1368,28 +1403,78 @@ async function loadClasswork() {
     // Teacher form
     html += `
         <div style="background:#fff3e0;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #c8943e;">
-            <h4 style="color:#c8943e;">➕ Post New Classwork</h4>
+            <h4>➕ Post New Classwork</h4>
             <input type="text" id="cwTitle" placeholder="Title *" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
             <input type="text" id="cwSubject" placeholder="Subject" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
             <textarea id="cwDescription" placeholder="Description" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea>
             <input type="date" id="cwDueDate" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-            <button onclick="addClasswork()" style="background:#c8943e;color:white;padding:12px 25px;border:none;border-radius:25px;font-size:16px;width:100%;">✅ Post Classwork</button>
+            <button onclick="addClasswork()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;">Post Classwork</button>
         </div>
     `;
     
-    html += '<div id="classworkList">Loading...</div>';
+    html += '<div id="cwList">Loading...</div>';
     content.innerHTML = html;
     
-    try {
-        const snapshot = await db.collection('classwork').orderBy('createdAt', 'desc').get();
-        const list = document.getElementById('classworkList');
-        
-        if (snapshot.empty) {
-            list.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">No classwork posted yet. Use the form above.</p>';
-            return;
-        }
-        
-        let items = '';
+    // Load data using then()
+    db.collection('classwork').orderBy('createdAt', 'desc').get()
+        .then(snapshot => {
+            const list = document.getElementById('cwList');
+            if (!list) return;
+            
+            console.log('Classwork docs found:', snapshot.size);
+            
+            if (snapshot.empty) {
+                list.innerHTML = '<p style="color:#888;">No classwork posted yet.</p>';
+                return;
+            }
+            
+            let items = '';
+            snapshot.forEach(doc => {
+                const c = doc.data();
+                console.log('Classwork data:', c);
+                items += `
+                    <div style="background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-left:4px solid #c8943e;">
+                        <strong>${c.title || 'N/A'}</strong>
+                        <small style="color:#888;"> (${c.subject || 'General'})</small>
+                        <p>${c.description || ''}</p>
+                        ${c.dueDate ? '<p style="color:#c0392b;">📅 Due: ' + c.dueDate + '</p>' : ''}
+                        <small>Posted by ${c.teacherName || 'Teacher'}</small>
+                    </div>
+                `;
+            });
+            list.innerHTML = items;
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            document.getElementById('cwList').innerHTML = '<p style="color:red;">Error: ' + err.message + '</p>';
+        });
+}
+
+function addClasswork() {
+    const title = document.getElementById('cwTitle')?.value?.trim();
+    const subject = document.getElementById('cwSubject')?.value?.trim();
+    const description = document.getElementById('cwDescription')?.value?.trim();
+    const dueDate = document.getElementById('cwDueDate')?.value;
+    
+    if (!title) {
+        alert('Please enter a title');
+        return;
+    }
+    
+    db.collection('classwork').add({
+        title: title,
+        subject: subject,
+        description: description,
+        dueDate: dueDate,
+        teacherName: userData?.fullName || 'Teacher',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+        showToast('Posted!', 'success');
+        loadClasswork();
+    })
+    .catch(err => alert('Error: ' + err.message));
+}      let items = '';
         snapshot.forEach(doc => {
             const c = doc.data();
             items += `
