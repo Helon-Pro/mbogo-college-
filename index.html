@@ -1020,6 +1020,13 @@ const firebaseConfig = {
 ‎// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
+console.log('Step 1: Firebase OK');
+
+// Test navigation
+function showPage(page) { console.log('showPage:', page); }
+function openModal(id) { console.log('openModal:', id); }
+function closeModal(id) { console.log('closeModal:', id); }
+function toggleMenu() { console.log('toggleMenu'); }
 // ============ GLOBAL STATE ============
 let currentUser = null;
 let userData = null;
