@@ -1289,6 +1289,15 @@ function loadDashboardSection(section) {
 // ============ ANNOUNCEMENTS ============
 function loadAnnouncements() {
     const content = document.getElementById('dashboardContent');
+    
+    // Add this debug line:
+    alert('Content div found: ' + (content ? 'YES' : 'NO'));
+    
+    if (!content) return;
+    // ... rest of function
+}
+function loadAnnouncements() {
+    const content = document.getElementById('dashboardContent');
     if (!content) return;
     
     content.innerHTML = `
