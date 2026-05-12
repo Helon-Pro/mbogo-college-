@@ -7,6 +7,7 @@
     <meta name="keywords" content="Mbogo College, Kampala school, Uganda secondary school, education Kampala">
     <meta name="author" content="ICT Club - Mbogo College School">
     <title>Mbogo College School | Kampala, Uganda</title>
+
     <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -938,7 +939,8 @@
     <div class="footer-grid">
         <div>
             <h4>Mbogo College School</h4>
-            <p>Empowering young minds since 2005.</p>
+            <p>Education is Value.</p>
+<h4>2026 year theme: <br> Discipline Today, Success Tomorrow.</h4>
             <p>P.O. Box 10320, Kampala, Uganda</p>
             <p>📞 +256 703 204 367</p>
             <p>✉️ mbogocollegeschool@yahoo.com</p>
@@ -1101,11 +1103,8 @@ async function signup(event) {
         
         await db.collection('users').doc(user.uid).set(userDoc);
         
-        // Send email verification
-        await user.sendEmailVerification({
-            url: 'https://helon-pro.github.io/mbogo-college-/',
-            handleCodeInApp: false
-        });
+        
+  
         
         // If student has parent email, create link
         if (role === 'student' && parentEmail) {
@@ -1144,12 +1143,7 @@ async function login(event) {
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
         
-        // Check if email is verified
-        if (!user.emailVerified) {
-            showToast('Please verify your email first. Check your inbox or spam folder for the verification link.', 'warning');
-            await auth.signOut();
-            return;
-        }
+        
         
         // Get user data from Firestore
         const userDoc = await db.collection('users').doc(user.uid).get();
