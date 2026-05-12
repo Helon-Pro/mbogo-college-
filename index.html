@@ -1,433 +1,1721 @@
- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Mbogo College School - Premier Secondary School in Kampala, Uganda. Academic excellence since 2005.">
-    <title>Mbogo College School | Kampala, Uganda</title>
-    
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
-    
-    <style>
-        :root {
-            --primary: #1a3a5c;
-            --secondary: #c8943e;
-            --light: #f5f6fa;
-            --white: #ffffff;
-            --dark: #1a1a2e;
-            --success: #2d8a4e;
-            --danger: #c0392b;
-            --warning: #e67e22;
-            --radius: 12px;
-            --shadow: 0 4px 15px rgba(0,0,0,0.1);
-            --transition: all 0.3s ease;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light); color: var(--dark); line-height: 1.6; }
-        
-        .navbar { background: var(--white); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 1000; }
-        .logo { display: flex; align-items: center; gap: 10px; font-size: 1.3rem; font-weight: 700; color: var(--primary); cursor: pointer; }
-        .logo i { color: var(--secondary); font-size: 1.8rem; }
-        .nav-links { display: flex; gap: 1rem; align-items: center; list-style: none; }
-        .nav-links a, .nav-links button { cursor: pointer; font-weight: 500; color: var(--dark); text-decoration: none; padding: 8px 15px; border-radius: 20px; border: none; background: none; font-size: 0.9rem; }
-        .nav-links button { background: var(--secondary); color: white; }
-        .nav-links button:hover { background: #b07d2e; }
-        .hamburger { display: none; font-size: 1.5rem; cursor: pointer; }
-        
-        .hero { background: linear-gradient(135deg, rgba(26,58,92,0.9), rgba(42,90,140,0.85)), url('https://images.unsplash.com/photo-1523050854058-8df90910a68a?w=1200&q=80') center/cover; color: white; padding: 5rem 2rem; text-align: center; min-height: 70vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .hero h1 { font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 1rem; }
-        .hero p { font-size: 1.1rem; max-width: 600px; margin-bottom: 2rem; }
-        
-        .section { padding: 4rem 2rem; max-width: 1200px; margin: 0 auto; }
-        .section-title { text-align: center; color: var(--primary); font-size: 2rem; margin-bottom: 2rem; }
-        .section-title::after { content: ''; display: block; width: 60px; height: 4px; background: var(--secondary); margin: 1rem auto; border-radius: 2px; }
-        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; }
-        .card { background: white; padding: 2rem; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; }
-        .card i { font-size: 2rem; color: var(--secondary); margin-bottom: 1rem; }
-        
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 5000; align-items: center; justify-content: center; padding: 20px; }
-        .modal-overlay.active { display: flex; }
-        .modal { background: white; border-radius: var(--radius); width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; padding: 2rem; position: relative; }
-        .modal h3 { color: var(--primary); margin-bottom: 1.5rem; }
-        .modal input, .modal select { width: 100%; padding: 12px; margin-bottom: 1rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; }
-        .modal button { width: 100%; padding: 12px; background: var(--secondary); color: white; border: none; border-radius: 25px; font-size: 1rem; font-weight: 600; cursor: pointer; }
-        .modal-close { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; color: #999; background: none; border: none; }
-        
-        .dashboard-layout { display: none; max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
-        .dashboard-layout.active { display: grid; grid-template-columns: 250px 1fr; gap: 1.5rem; }
-        .sidebar { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.5rem; height: fit-content; position: sticky; top: 100px; }
-        .sidebar a { display: block; padding: 12px; margin: 5px 0; background: var(--light); border-radius: 8px; cursor: pointer; color: var(--dark); text-decoration: none; }
-        .sidebar a:hover { background: var(--primary); color: white; }
-        .main-content { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.5rem; min-height: 60vh; }
-        
-        footer { background: var(--dark); color: #ccc; padding: 2rem; text-align: center; margin-top: 2rem; }
-        footer a { color: var(--secondary); }
-        
-        @media (max-width: 768px) {
-            .nav-links { display: none; position: absolute; top: 70px; left: 0; right: 0; background: white; flex-direction: column; padding: 1rem; box-shadow: var(--shadow); }
-            .nav-links.active { display: flex; }
-            .hamburger { display: block; }
-            .dashboard-layout.active { grid-template-columns: 1fr; }
-        }
-    </style>
-</head>
-<body>
+‎<!DOCTYPE html>
+‎<html lang="en">
+‎<head>
+‎    <meta charset="UTF-8">
+‎    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+‎    <meta name="description" content="Mbogo College School - Premier Secondary School in Kampala, Uganda. Academic excellence since 2005.">
+‎    <meta name="keywords" content="Mbogo College, Kampala school, Uganda secondary school, education Kampala">
+‎    <meta name="author" content="ICT Club - Mbogo College School">
+‎    <title>Mbogo College School | Kampala, Uganda</title>
+‎
+‎    <!-- Firebase SDK -->
+‎<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+‎<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+‎<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+‎<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+‎    <!-- Font Awesome -->
+‎    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+‎
+‎    <style>
+‎        :root {
+‎            --primary: #1a3a5c;
+‎            --primary-light: #2a5a8c;
+‎            --secondary: #c8943e;
+‎            --secondary-light: #e0b060;
+‎            --success: #2d8a4e;
+‎            --danger: #c0392b;
+‎            --warning: #e67e22;
+‎            --info: #2980b9;
+‎            --light: #f5f6fa;
+‎            --dark: #1a1a2e;
+‎            --white: #ffffff;
+‎            --gray-100: #f8f9fa;
+‎            --gray-200: #e9ecef;
+‎            --gray-300: #dee2e6;
+‎            --gray-400: #ced4da;
+‎            --gray-500: #adb5bd;
+‎            --gray-600: #6c757d;
+‎            --gray-700: #495057;
+‎            --gray-800: #343a40;
+‎            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+‎            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+‎            --shadow-lg: 0 10px 25px rgba(0,0,0,0.15);
+‎            --radius: 12px;
+‎            --radius-sm: 8px;
+‎            --transition: all 0.3s ease;
+‎        }
+‎
+‎        * {
+‎            margin: 0;
+‎            padding: 0;
+‎            box-sizing: border-box;
+‎        }
+‎
+‎        body {
+‎            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+‎            background: var(--gray-100);
+‎            color: var(--dark);
+‎            line-height: 1.6;
+‎        }
+‎
+‎        /* Toast Notifications */
+‎        .toast-container {
+‎            position: fixed;
+‎            top: 20px;
+‎            right: 20px;
+‎            z-index: 10000;
+‎            display: flex;
+‎            flex-direction: column;
+‎            gap: 10px;
+‎        }
+‎
+‎        .toast {
+‎            padding: 15px 20px;
+‎            border-radius: var(--radius-sm);
+‎            color: white;
+‎            font-weight: 500;
+‎            animation: slideInRight 0.3s ease;
+‎            min-width: 280px;
+‎            box-shadow: var(--shadow-lg);
+‎            display: flex;
+‎            align-items: center;
+‎            gap: 10px;
+‎        }
+‎
+‎        .toast.success { background: var(--success); }
+‎        .toast.error { background: var(--danger); }
+‎        .toast.warning { background: var(--warning); }
+‎        .toast.info { background: var(--info); }
+‎
+‎        @keyframes slideInRight {
+‎            from { transform: translateX(100%); opacity: 0; }
+‎            to { transform: translateX(0); opacity: 1; }
+‎        }
+‎
+‎        /* Navbar */
+‎        .navbar {
+‎            background: var(--white);
+‎            box-shadow: var(--shadow);
+‎            position: sticky;
+‎            top: 0;
+‎            z-index: 1000;
+‎            padding: 0.8rem 2rem;
+‎        }
+‎
+‎        .navbar-inner {
+‎            max-width: 1300px;
+‎            margin: 0 auto;
+‎            display: flex;
+‎            justify-content: space-between;
+‎            align-items: center;
+‎        }
+‎
+‎        .logo {
+‎            display: flex;
+‎            align-items: center;
+‎            gap: 12px;
+‎            text-decoration: none;
+‎            color: var(--primary);
+‎        }
+‎
+‎        .logo-icon {
+‎            width: 50px;
+‎            height: 50px;
+‎            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+‎            border-radius: 50%;
+‎            display: flex;
+‎            align-items: center;
+‎            justify-content: center;
+‎            color: var(--secondary);
+‎            font-size: 1.5rem;
+‎            font-weight: bold;
+‎        }
+‎
+‎        .logo-text h2 {
+‎            font-size: 1.2rem;
+‎            font-weight: 700;
+‎            color: var(--primary);
+‎        }
+‎
+‎        .logo-text small {
+‎            font-size: 0.7rem;
+‎            color: var(--gray-600);
+‎            display: block;
+‎        }
+‎
+‎        .nav-links {
+‎            display: flex;
+‎            align-items: center;
+‎            gap: 1.5rem;
+‎            list-style: none;
+‎        }
+‎
+‎        .nav-links a {
+‎            text-decoration: none;
+‎            color: var(--gray-700);
+‎            font-weight: 500;
+‎            cursor: pointer;
+‎            transition: var(--transition);
+‎            font-size: 0.95rem;
+‎        }
+‎
+‎        .nav-links a:hover {
+‎            color: var(--secondary);
+‎        }
+‎
+‎        .btn {
+‎            padding: 10px 20px;
+‎            border-radius: 25px;
+‎            border: none;
+‎            font-weight: 600;
+‎            cursor: pointer;
+‎            transition: var(--transition);
+‎            font-size: 0.9rem;
+‎            display: inline-flex;
+‎            align-items: center;
+‎            gap: 8px;
+‎        }
+‎
+‎        .btn-primary {
+‎            background: var(--secondary);
+‎            color: white;
+‎        }
+‎
+‎        .btn-primary:hover {
+‎            background: var(--secondary-light);
+‎            transform: translateY(-2px);
+‎        }
+‎
+‎        .btn-outline {
+‎            background: transparent;
+‎            border: 2px solid var(--primary);
+‎            color: var(--primary);
+‎        }
+‎
+‎        .btn-outline:hover {
+‎            background: var(--primary);
+‎            color: white;
+‎        }
+‎
+‎        .btn-danger {
+‎            background: var(--danger);
+‎            color: white;
+‎        }
+‎
+‎        .btn-sm {
+‎            padding: 6px 14px;
+‎            font-size: 0.8rem;
+‎        }
+‎
+‎        .hamburger {
+‎            display: none;
+‎            font-size: 1.5rem;
+‎            cursor: pointer;
+‎            color: var(--primary);
+‎        }
+‎
+‎        /* Hero */
+‎        .hero {
+‎    background: linear-gradient(135deg, rgba(26,58,92,0.92), rgba(42,90,140,0.88)),
+‎                url('https://images.unsplash.com/photo-1523050854058-8df90910a68a?w=1200&q=80') center/cover;
+‎    color: white;
+‎    padding: 5rem 2rem;
+‎    text-align: center;
+‎    min-height: 70vh;
+‎    display: flex;
+‎    flex-direction: column;
+‎    justify-content: center;
+‎    align-items: center;
+‎    position: relative;
+‎    overflow: hidden;
+‎        }
+‎
+‎        .hero::before {
+‎            content: '';
+‎            position: absolute;
+‎            top: 0;
+‎            left: 0;
+‎            right: 0;
+‎            bottom: 0;
+‎            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+‎        }
+‎
+‎        .hero-content {
+‎            position: relative;
+‎            z-index: 1;
+‎            max-width: 800px;
+‎        }
+‎
+‎        .hero h1 {
+‎            font-size: clamp(2rem, 5vw, 3.5rem);
+‎            margin-bottom: 1rem;
+‎            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+‎            line-height: 1.2;
+‎        }
+‎
+‎        .hero .subtitle {
+‎            font-size: clamp(1rem, 2.5vw, 1.3rem);
+‎            margin-bottom: 2rem;
+‎            opacity: 0.95;
+‎        }
+‎
+‎        .hero-buttons {
+‎            display: flex;
+‎            gap: 15px;
+‎            flex-wrap: wrap;
+‎            justify-content: center;
+‎        }
+‎
+‎        .hero-stats {
+‎            display: flex;
+‎            gap: 2rem;
+‎            margin-top: 3rem;
+‎            flex-wrap: wrap;
+‎            justify-content: center;
+‎        }
+‎
+‎        .stat-item {
+‎            text-align: center;
+‎            background: rgba(255,255,255,0.1);
+‎            padding: 1.5rem 2rem;
+‎            border-radius: var(--radius);
+‎            backdrop-filter: blur(10px);
+‎        }
+‎
+‎        .stat-number {
+‎            font-size: 2rem;
+‎            font-weight: 700;
+‎            color: var(--secondary);
+‎        }
+‎
+‎        .stat-label {
+‎            font-size: 0.9rem;
+‎            opacity: 0.8;
+‎        }
+‎
+‎        /* Sections */
+‎        .section {
+‎            padding: 5rem 2rem;
+‎            max-width: 1200px;
+‎            margin: 0 auto;
+‎        }
+‎
+‎        .section-title {
+‎            text-align: center;
+‎            color: var(--primary);
+‎            font-size: 2rem;
+‎            margin-bottom: 1rem;
+‎        }
+‎
+‎        .section-subtitle {
+‎            text-align: center;
+‎            color: var(--gray-600);
+‎            margin-bottom: 3rem;
+‎            max-width: 600px;
+‎            margin-left: auto;
+‎            margin-right: auto;
+‎        }
+‎
+‎        .section-title::after {
+‎            content: '';
+‎            display: block;
+‎            width: 60px;
+‎            height: 4px;
+‎            background: var(--secondary);
+‎            margin: 1rem auto;
+‎            border-radius: 2px;
+‎        }
+‎
+‎        /* Cards */
+‎        .card-grid {
+‎            display: grid;
+‎            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+‎            gap: 2rem;
+‎        }
+‎
+‎        .card {
+‎            background: white;
+‎            border-radius: var(--radius);
+‎            box-shadow: var(--shadow);
+‎            overflow: hidden;
+‎            transition: var(--transition);
+‎        }
+‎
+‎        .card:hover {
+‎            transform: translateY(-5px);
+‎            box-shadow: var(--shadow-lg);
+‎        }
+‎
+‎        .card-body {
+‎            padding: 1.5rem;
+‎        }
+‎
+‎        .card-icon {
+‎            width: 60px;
+‎            height: 60px;
+‎            background: linear-gradient(135deg, var(--primary), var(--primary-light));            border-radius: 50%;
+‎            display: flex;
+‎            align-items: center;
+‎            justify-content: center;
+‎            color: var(--secondary);
+‎            font-size: 1.5rem;
+‎            margin-bottom: 1rem;
+‎        }
+‎
+‎        /* Modal */
+‎        .modal-overlay {
+‎            display: none;
+‎            position: fixed;
+‎            top: 0;
+‎            left: 0;
+‎            right: 0;
+‎            bottom: 0;
+‎            background: rgba(0,0,0,0.6);
+‎            z-index: 5000;
+‎            align-items: center;
+‎            justify-content: center;
+‎            padding: 20px;
+‎        }
+‎
+‎        .modal-overlay.active {
+‎            display: flex;
+‎        }
+‎
+‎        .modal {
+‎            background: white;
+‎            border-radius: var(--radius);
+‎            width: 100%;
+‎            max-width: 500px;
+‎            max-height: 90vh;
+‎            overflow-y: auto;
+‎            animation: modalIn 0.3s ease;
+‎            position: relative;
+‎        }
+‎
+‎        @keyframes modalIn {
+‎            from { transform: scale(0.9); opacity: 0; }
+‎            to { transform: scale(1); opacity: 1; }
+‎        }
+‎
+‎        .modal-header {
+‎            padding: 1.5rem;
+‎            border-bottom: 1px solid var(--gray-200);
+‎            display: flex;
+‎            justify-content: space-between;
+‎            align-items: center;
+‎            position: sticky;
+‎            top: 0;
+‎            background: white;
+‎            z-index: 1;
+‎        }
+‎
+‎        .modal-body {
+‎            padding: 1.5rem;
+‎        }
+‎
+‎        .modal-close {
+‎            cursor: pointer;
+‎            font-size: 1.5rem;
+‎            color: var(--gray-600);
+‎            background: none;
+‎            border: none;
+‎        }
+‎
+‎        /* Form Elements */
+‎        .form-group {
+‎            margin-bottom: 1.2rem;
+‎        }
+‎
+‎        .form-group label {
+‎            display: block;
+‎            margin-bottom: 0.5rem;
+‎            font-weight: 600;
+‎            color: var(--gray-700);
+‎            font-size: 0.9rem;
+‎        }
+‎
+‎        .form-control {
+‎            width: 100%;
+‎            padding: 12px 15px;
+‎            border: 2px solid var(--gray-300);
+‎            border-radius: var(--radius-sm);
+‎            font-size: 1rem;
+‎            transition: var(--transition);
+‎            background: var(--gray-100);
+‎        }
+‎
+‎        .form-control:focus {
+‎            outline: none;
+‎            border-color: var(--secondary);
+‎            background: white;
+‎            box-shadow: 0 0 0 3px rgba(200,148,62,0.1);
+‎        }
+‎
+‎        /* Dashboard */
+‎        .dashboard-layout {
+‎            display: none;
+‎            max-width: 1300px;
+‎            margin: 2rem auto;
+‎            padding: 0 1rem;
+‎        }
+‎
+‎        .dashboard-layout.active {
+‎            display: grid;
+‎            grid-template-columns: 250px 1fr;
+‎            gap: 2rem;
+‎        }
+‎
+‎        .sidebar {
+‎            background: white;
+‎            border-radius: var(--radius);
+‎            box-shadow: var(--shadow);
+‎            padding: 1.5rem;
+‎            position: sticky;
+‎            top: 100px;
+‎            height: fit-content;
+‎        }
+‎
+‎        .sidebar-menu {
+‎            list-style: none;
+‎        }
+‎
+‎        .sidebar-menu li {
+‎            margin-bottom: 0.5rem;
+‎        }
+‎
+‎        .sidebar-menu a {
+‎            display: flex;
+‎            align-items: center;
+‎            gap: 10px;
+‎            padding: 10px 15px;
+‎            border-radius: var(--radius-sm);
+‎            color: var(--gray-700);
+‎            text-decoration: none;
+‎            cursor: pointer;
+‎            transition: var(--transition);
+‎        }
+‎
+‎        .sidebar-menu a:hover,
+‎        .sidebar-menu a.active {
+‎            background: var(--primary);
+‎            color: white;
+‎        }
+‎
+‎        .main-content {
+‎            min-height: 60vh;
+‎        }
+‎
+‎        .dashboard-card {
+‎            background: white;
+‎            border-radius: var(--radius);
+‎            box-shadow: var(--shadow);
+‎            padding: 1.5rem;
+‎            margin-bottom: 1.5rem;
+‎        }
+‎
+‎        /* News Section */
+‎        .news-item {
+‎            border-left: 4px solid var(--secondary);
+‎            padding: 1rem 1.5rem;
+‎            margin-bottom: 1rem;
+‎            background: var(--gray-100);
+‎            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+‎            transition: var(--transition);
+‎        }
+‎
+‎        .news-item:hover {
+‎            background: white;
+‎            box-shadow: var(--shadow);
+‎        }
+‎
+‎        .news-item h4 {
+‎            color: var(--primary);
+‎            margin-bottom: 0.3rem;
+‎        }
+‎
+‎        .news-item .news-date {
+‎            font-size: 0.8rem;
+‎            color: var(--gray-600);
+‎        }
+‎
+‎        .news-item .news-badge {
+‎            display: inline-block;
+‎            padding: 3px 10px;
+‎            border-radius: 15px;
+‎            font-size: 0.7rem;
+‎            font-weight: 600;
+‎            text-transform: uppercase;
+‎        }
+‎
+‎        .badge-urgent { background: #ffe0e0; color: var(--danger); }
+‎        .badge-announcement { background: #e0f0ff; color: var(--info); }
+‎        .badge-event { background: #e8ffe0; color: var(--success); }
+‎
+‎        /* Timetable */
+‎        .timetable-grid {
+‎            display: grid;
+‎            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+‎            gap: 0.5rem;
+‎        }
+‎
+‎        .timetable-day {
+‎            background: var(--primary);
+‎            color: white;
+‎            padding: 0.8rem;
+‎            border-radius: var(--radius-sm);
+‎            text-align: center;
+‎            font-weight: 600;
+‎        }
+‎
+‎        .timetable-cell {
+‎            background: var(--gray-100);
+‎            padding: 0.8rem;
+‎            border-radius: var(--radius-sm);
+‎            text-align: center;
+‎            font-size: 0.85rem;
+‎        }
+‎
+‎        /* Progress */
+‎        .progress-circle {
+‎            width: 100px;
+‎            height: 100px;
+‎            border-radius: 50%;
+‎            background: conic-gradient(var(--success) var(--progress), var(--gray-200) 0deg);
+‎            display: flex;
+‎            align-items: center;
+‎            justify-content: center;
+‎            margin: 0 auto;
+‎            position: relative;
+‎        }
+‎
+‎        .progress-circle::before {
+‎            content: '';
+‎            width: 80px;
+‎            height: 80px;
+‎            border-radius: 50%;
+‎            background: white;
+‎            position: absolute;
+‎        }
+‎
+‎        .progress-text {
+‎            position: relative;
+‎            font-weight: 700;
+‎            font-size: 1.2rem;
+‎            color: var(--primary);
+‎        }
+‎
+‎        /* Footer */
+‎        .footer {
+‎            background: var(--dark);
+‎            color: #ccc;
+‎            padding: 3rem 2rem 1rem;
+‎        }
+‎
+‎        .footer-grid {
+‎            display: grid;
+‎            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+‎            gap: 2rem;
+‎            max-width: 1200px;
+‎            margin: 0 auto 2rem;
+‎        }
+‎
+‎        .footer h4 {
+‎            color: white;
+‎            margin-bottom: 1rem;
+‎            font-size: 1.1rem;
+‎        }
+‎
+‎        .footer a {
+‎            color: #ccc;
+‎            text-decoration: none;
+‎            display: block;
+‎            margin-bottom: 0.5rem;
+‎            transition: var(--transition);
+‎        }
+‎
+‎        .footer a:hover { color: var(--secondary); }
+‎
+‎        .footer-bottom {
+‎            text-align: center;
+‎            padding-top: 1.5rem;
+‎            border-top: 1px solid #333;
+‎            max-width: 1200px;
+‎            margin: 0 auto;
+‎            font-size: 0.9rem;
+‎        }
+‎
+‎        .ict-badge {
+‎            display: inline-block;
+‎            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+‎            color: white;
+‎            padding: 5px 15px;
+‎            border-radius: 20px;
+‎            font-size: 0.8rem;
+‎            margin-top: 10px;
+‎        }
+‎
+‎        /* Visitor Counter */
+‎        .visitor-counter {
+‎            display: inline-flex;
+‎            align-items: center;
+‎            gap: 8px;
+‎            background: rgba(255,255,255,0.1);
+‎            padding: 8px 15px;
+‎            border-radius: 20px;
+‎            font-size: 0.9rem;
+‎        }
+‎
+‎        /* Responsive */
+‎        @media (max-width: 768px) {
+‎            .nav-links {
+‎                display: none;
+‎                position: absolute;
+‎                top: 70px;
+‎                left: 0;
+‎                right: 0;
+‎                background: white;
+‎                flex-direction: column;
+‎                padding: 1rem;
+‎                box-shadow: var(--shadow-lg);
+‎            }
+‎
+‎            .nav-links.active {
+‎                display: flex;
+‎            }
+‎
+‎            .hamburger {
+‎                display: block;
+‎            }
+‎
+‎            .dashboard-layout.active {
+‎                grid-template-columns: 1fr;
+‎            }
+‎
+‎            .hero-stats {
+‎                flex-direction: column;
+‎                gap: 1rem;
+‎            }
+‎
+‎            .timetable-grid {
+‎                grid-template-columns: repeat(2, 1fr);
+‎            }
+‎        }
+‎.dashboard-layout {
+‎    display: none;
+‎}
+‎
+‎.dashboard-layout.active {
+‎    display: grid;
+‎    grid-template-columns: 250px 1fr;
+‎    gap: 20px;
+‎    max-width: 1200px;
+‎    margin: 20px auto;
+‎    padding: 20px;
+‎}
+‎
+‎@media (max-width: 768px) {
+‎    .dashboard-layout.active {
+‎        grid-template-columns: 1fr;
+‎    }
+‎}
+‎    </style>
+‎<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+‎<script>eruda.init();</script>
+‎</head>
+‎<body>
 
-<nav class="navbar">
-    <div class="logo" onclick="showPage('home')"><i class="fas fa-school"></i> Mbogo College</div>
-    <div class="hamburger" onclick="toggleMenu()">☰</div>
-    <div class="nav-links" id="navLinks">
-        <a onclick="showPage('home')">Home</a>
-        <a onclick="showPage('about')">About</a>
-        <a onclick="showPage('contact')">Contact</a>
-        <span id="navLogin"><button onclick="openModal('loginModal')">Login</button></span>
-        <span id="navSignup"><button onclick="openModal('signupModal')">Sign Up</button></span>
-        <span id="navUser" style="display:none;font-weight:600;"></span>
-        <span id="navDashboard" style="display:none;"><button onclick="showDashboard()">Dashboard</button></span>
-        <span id="navLogout" style="display:none;"><button onclick="logout()" style="background:#c0392b;">Logout</button></span>
-    </div>
-</nav>
-
-<div id="page-home">
-    <section class="hero">
-        <h1>Mbogo College School</h1>
-        <p>Shaping Future Leaders Since 2005 — A premier secondary school in Kampala, Uganda.</p>
-        <button class="btn" style="padding:12px 30px;background:var(--secondary);color:white;border:none;border-radius:25px;font-size:1rem;cursor:pointer;" onclick="openModal('signupModal')">Enroll Now</button>
-    </section>
-    <section class="section">
-        <h2 class="section-title">Why Mbogo College?</h2>
-        <div class="card-grid">
-            <div class="card"><i class="fas fa-chalkboard-teacher"></i><h3>Expert Teachers</h3><p>Dedicated educators committed to every student's success.</p></div>
-            <div class="card"><i class="fas fa-laptop"></i><h3>Digital Learning</h3><p>Online classwork and progress tracking accessible anytime.</p></div>
-            <div class="card"><i class="fas fa-futbol"></i><h3>Sports & Arts</h3><p>Well-rounded programmes for holistic development.</p></div>
-        </div>
-    </section>
-</div>
-
-<div id="page-about" style="display:none;"><section class="section"><h2 class="section-title">About Us</h2><p style="text-align:center;max-width:700px;margin:0 auto;">Mbogo College School, located in Kampala, Uganda, offers O-Level and A-Level curricula following UNEB standards. P.O. Box 10320, Kampala. 📞 +256 703 204 367 | ✉️ mbogocollegeschool@yahoo.com</p></section></div>
-<div id="page-contact" style="display:none;"><section class="section"><h2 class="section-title">Contact</h2><div class="card-grid"><div class="card"><i class="fas fa-map-marker-alt"></i><h3>Address</h3><p>P.O. Box 10320, Kampala</p></div><div class="card"><i class="fas fa-phone"></i><h3>Phone</h3><p>+256 703 204 367</p></div><div class="card"><i class="fas fa-envelope"></i><h3>Email</h3><p>mbogocollegeschool@yahoo.com</p></div></div></section></div>
-
-<div class="dashboard-layout" id="dashboardLayout">
-    <aside class="sidebar">
-        <h4 style="margin-bottom:1rem;color:var(--primary);">Menu</h4>
-        <a onclick="loadAnnouncements()">📢 Announcements</a>
-        <a onclick="loadTimetable()">📅 Timetable</a>
-        <a onclick="loadClasswork()">📝 Classwork</a>
-        <a onclick="loadStudentProgress()">📊 Progress</a>
-        <a onclick="loadProfile()">👤 Profile</a>
-    </aside>
-    <main class="main-content" id="dashboardContent">
-        <p style="text-align:center;color:#888;">Select an option from the menu</p>
-    </main>
-</div>
-
-<div class="modal-overlay" id="loginModal"><div class="modal"><span class="modal-close" onclick="closeModal('loginModal')">&times;</span><h3>Login</h3><form onsubmit="login(event)"><input type="email" id="loginEmail" placeholder="Email" required><input type="password" id="loginPassword" placeholder="Password" required><button type="submit">Login</button></form><p style="text-align:center;margin-top:10px;"><a href="#" onclick="closeModal('loginModal');openModal('signupModal')">No account? Sign Up</a></p></div></div>
-
-<div class="modal-overlay" id="signupModal"><div class="modal"><span class="modal-close" onclick="closeModal('signupModal')">&times;</span><h3>Create Account</h3><form onsubmit="signup(event)"><input type="text" id="signupName" placeholder="Full Name" required><input type="email" id="signupEmail" placeholder="Email" required><input type="password" id="signupPassword" placeholder="Password (min 8 chars)" required minlength="8"><input type="password" id="signupConfirmPassword" placeholder="Confirm Password" required><select id="signupRole" required><option value="">Select Role</option><option value="student">Student</option><option value="teacher">Teacher</option><option value="parent">Parent</option></select><div id="teacherCodeGroup" style="display:none;"><input type="password" id="teacherCode" placeholder="Teacher Registration Code"></div><button type="submit">Create Account</button></form><p style="text-align:center;margin-top:10px;"><a href="#" onclick="closeModal('signupModal');openModal('loginModal')">Have an account? Login</a></p></div></div>
-
-<footer>
-    <p>Mbogo College School | P.O. Box 10320, Kampala, Uganda</p>
-    <p>📞 +256 703 204 367 | ✉️ mbogocollegeschool@yahoo.com</p>
-    <p style="margin-top:10px;"><small>Built by <strong>ICT Club - Mbogo College School</strong></small></p>
-</footer>
-
-<script>
-// ============ FIREBASE ============
-const firebaseConfig = {
-    apiKey: "AIzaSyAjM2lMoD3E7zr8mCSU5cqUxfqUCOEsZTM",
-    authDomain: "mbogo-college-school-36e7c.firebaseapp.com",
-    projectId: "mbogo-college-school-36e7c",
-    storageBucket: "mbogo-college-school-36e7c.firebasestorage.app",
-    messagingSenderId: "66126002537",
-    appId: "1:66126002537:web:9187261918ae640d9465f8"
-};
-firebase.initializeApp(firebaseConfig);
-var auth = firebase.auth();
-var db = firebase.firestore();
-console.log('✅ Firebase connected!');
-
-// ============ GLOBAL STATE ============
-var currentUser = null;
-var userData = null;
-var TEACHER_SECRET_CODE = "MbogoTeachers2026";
-
-// ============ TOAST ============
-function showToast(msg, type) {
-    type = type || 'success';
-    var div = document.createElement('div');
-    div.style.cssText = 'position:fixed;top:20px;right:20px;padding:15px 25px;border-radius:8px;color:white;z-index:9999;animation:slideIn 0.3s ease;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
-    div.style.background = type === 'success' ? '#2d8a4e' : type === 'error' ? '#c0392b' : '#e67e22';
-    div.textContent = (type === 'success' ? '✅ ' : type === 'error' ? '❌ ' : '⚠️ ') + msg;
-    document.body.appendChild(div);
-    setTimeout(function(){ div.remove(); }, 4000);
-}
-
-// ============ NAVIGATION ============
-function showPage(page) {
-    document.querySelectorAll('[id^="page-"]').forEach(function(el){ el.style.display = 'none'; });
-    var dashboard = document.getElementById('dashboardLayout');
-    if (dashboard) { dashboard.style.display = 'none'; dashboard.classList.remove('active'); }
-    var pageEl = document.getElementById('page-' + page);
-    if (pageEl) pageEl.style.display = 'block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-function openModal(id) { document.getElementById(id).classList.add('active'); }
-function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-function toggleMenu() { document.getElementById('navLinks').classList.toggle('active'); }
-window.onclick = function(event) { if (event.target.classList.contains('modal-overlay')) { event.target.classList.remove('active'); } };
-
-// ============ AUTH ============
-document.getElementById('signupRole').addEventListener('change', function(){
-    var group = document.getElementById('teacherCodeGroup');
-    if (group) group.style.display = this.value === 'teacher' ? 'block' : 'none';
-});
-
-function signup(event) {
-    event.preventDefault();
-    var name = document.getElementById('signupName').value.trim();
-    var email = document.getElementById('signupEmail').value.trim();
-    var password = document.getElementById('signupPassword').value;
-    var confirmPassword = document.getElementById('signupConfirmPassword').value;
-    var role = document.getElementById('signupRole').value;
-    
-    if (!name || !email || !password || !role) { showToast('Fill all fields', 'error'); return; }
-    if (password !== confirmPassword) { showToast('Passwords do not match', 'error'); return; }
-    if (password.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
-    
-    if (role === 'teacher') {
-        var code = document.getElementById('teacherCode').value;
-        if (code !== TEACHER_SECRET_CODE) { showToast('Invalid teacher registration code', 'error'); return; }
-    }
-    
-    auth.createUserWithEmailAndPassword(email, password).then(function(userCredential) {
-        var user = userCredential.user;
-        return db.collection('users').doc(user.uid).set({
-            fullName: name, email: email, role: role, createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-    }).then(function(){
-        showToast('Account created! Please login.', 'success');
-        closeModal('signupModal');
-    }).catch(function(error){
-        var msg = error.message;
-        if (error.code === 'auth/email-already-in-use') msg = 'Email already registered.';
-        showToast(msg, 'error');
-    });
-}
-
-function login(event) {
-    event.preventDefault();
-    var email = document.getElementById('loginEmail').value.trim();
-    var password = document.getElementById('loginPassword').value;
-    if (!email || !password) { showToast('Enter email and password', 'error'); return; }
-    
-    auth.signInWithEmailAndPassword(email, password).then(function(userCredential){
-        currentUser = userCredential.user;
-        return db.collection('users').doc(currentUser.uid).get();
-    }).then(function(doc){
-        if (doc.exists) { userData = doc.data(); }
-        else { userData = { fullName: currentUser.email, email: currentUser.email, role: 'student' }; }
-        localStorage.setItem('mbogo_user', JSON.stringify(userData));
-        updateUI();
-        showDashboard();
-        closeModal('loginModal');
-        showToast('Welcome, ' + (userData.fullName.split(' ')[0] || 'User') + '!', 'success');
-    }).catch(function(error){
-        var msg = error.message;
-        if (error.code === 'auth/user-not-found') msg = 'No account found.';
-        if (error.code === 'auth/wrong-password') msg = 'Incorrect password.';
-        showToast(msg, 'error');
-    });
-}
-
-function logout() {
-    auth.signOut();
-    currentUser = null; userData = null;
-    localStorage.removeItem('mbogo_user');
-    updateUI();
-    showPage('home');
-    showToast('Logged out', 'success');
-}
-
-function updateUI() {
-    var loggedIn = !!(currentUser && userData);
-    document.getElementById('navLogin').style.display = loggedIn ? 'none' : 'inline';
-    document.getElementById('navSignup').style.display = loggedIn ? 'none' : 'inline';
-    document.getElementById('navUser').style.display = loggedIn ? 'inline' : 'none';
-    document.getElementById('navDashboard').style.display = loggedIn ? 'inline' : 'none';
-    document.getElementById('navLogout').style.display = loggedIn ? 'inline' : 'none';
-    if (loggedIn) document.getElementById('navUser').textContent = '👋 ' + userData.fullName.split(' ')[0];
-}
-
-// ============ DASHBOARD ============
-function showDashboard() {
-    document.querySelectorAll('[id^="page-"]').forEach(function(el){ el.style.display = 'none'; });
-    var dashboard = document.getElementById('dashboardLayout');
-    dashboard.style.display = 'grid';
-    dashboard.classList.add('active');
-    loadAnnouncements();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// ============ ANNOUNCEMENTS ============
-function loadAnnouncements() {
-    var content = document.getElementById('dashboardContent');
-    if (!content) return;
-    var html = '<h3>📢 Announcements</h3>';
-    html += '<div style="background:#e8f0ff;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #2980b9;"><h4>➕ Post Announcement</h4><input type="text" id="newsTitle" placeholder="Title" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><textarea id="newsContent" placeholder="Content" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea><button onclick="postAnnouncement()" style="background:#2980b9;color:white;padding:10px 20px;border:none;border-radius:25px;">Post</button></div><div id="newsList">Loading...</div>';
-    content.innerHTML = html;
-    
-    db.collection('announcements').orderBy('createdAt','desc').get().then(function(snapshot){
-        var list = document.getElementById('newsList');
-        if (!list) return;
-        if (snapshot.empty) { list.innerHTML = '<p style="color:#888;">No announcements yet.</p>'; return; }
-        var items = '';
-        snapshot.forEach(function(doc){
-            var n = doc.data();
-            items += '<div style="background:white;padding:12px;margin:8px 0;border-radius:8px;border-left:4px solid #2980b9;position:relative;">' +
-                (userData && userData.role === 'teacher' ? '<button onclick="deleteAnnouncement(\'' + doc.id + '\')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>' : '') +
-                '<strong>' + (n.title||'N/A') + '</strong><p>' + (n.content||'') + '</p><small>By ' + (n.author||'Admin') + '</small></div>';
-        });
-        list.innerHTML = items;
-    }).catch(function(){ document.getElementById('newsList').innerHTML = '<p style="color:red;">Error loading.</p>'; });
-}
-
-function postAnnouncement() {
-    var title = document.getElementById('newsTitle').value.trim();
-    var content = document.getElementById('newsContent').value.trim();
-    if (!title || !content) { alert('Fill both fields'); return; }
-    db.collection('announcements').add({ title: title, content: content, author: (userData?userData.fullName:'Admin'), createdAt: firebase.firestore.FieldValue.serverTimestamp() })
-        .then(function(){ showToast('Posted!','success'); loadAnnouncements(); })
-        .catch(function(err){ showToast('Error: '+err.message,'error'); });
-}
-
-function deleteAnnouncement(id) {
-    if (!confirm('Delete?')) return;
-    db.collection('announcements').doc(id).delete().then(function(){ showToast('Deleted!','success'); loadAnnouncements(); });
-}
-
-// ============ TIMETABLE ============
-function loadTimetable() {
-    var content = document.getElementById('dashboardContent');
-    if (!content) return;
-    var html = '<h3>📅 Class Timetable</h3>';
-    html += '<div style="background:#e8f4e8;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #2d8a4e;"><h4>➕ Add Entry</h4><select id="ttDay" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option></select><input type="text" id="ttTime" placeholder="Time" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><input type="text" id="ttSubject" placeholder="Subject" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><input type="text" id="ttTeacher" placeholder="Teacher" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><button onclick="addTimetable()" style="background:#2d8a4e;color:white;padding:10px 20px;border:none;border-radius:25px;">Save</button></div><div id="ttList">Loading...</div>';
-    content.innerHTML = html;
-    
-    db.collection('timetable').get().then(function(snapshot){
-        var list = document.getElementById('ttList');
-        if (!list) return;
-        if (snapshot.empty) { list.innerHTML = '<p style="color:#888;">No timetable entries yet.</p>'; return; }
-        var items = '';
-        snapshot.forEach(function(doc){
-            var t = doc.data();
-            items += '<div style="background:white;padding:12px;margin:5px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);position:relative;">' +
-                (userData && userData.role === 'teacher' ? '<button onclick="deleteTimetable(\'' + doc.id + '\')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>' : '') +
-                '<strong>' + (t.day||'N/A') + '</strong><p>📖 ' + (t.subject||'N/A') + '</p><small>⏰ ' + (t.time||'N/A') + '</small><br><small>👨‍🏫 ' + (t.teacher||'N/A') + '</small></div>';
-        });
-        list.innerHTML = items;
-    }).catch(function(){ document.getElementById('ttList').innerHTML = '<p style="color:red;">Error loading.</p>'; });
-}
-
-function addTimetable() {
-    var day = document.getElementById('ttDay').value;
-    var time = document.getElementById('ttTime').value.trim();
-    var subject = document.getElementById('ttSubject').value.trim();
-    var teacher = document.getElementById('ttTeacher').value.trim();
-    if (!time || !subject) { alert('Fill time and subject'); return; }
-    db.collection('timetable').add({ day: day, time: time, subject: subject, teacher: teacher||'Staff', createdAt: firebase.firestore.FieldValue.serverTimestamp() })
-        .then(function(){ showToast('Added!','success'); loadTimetable(); })
-        .catch(function(err){ alert('Error: '+err.message); });
-}
-
-function deleteTimetable(id) {
-    if (!confirm('Delete?')) return;
-    db.collection('timetable').doc(id).delete().then(function(){ showToast('Deleted!','success'); loadTimetable(); });
-}
-// ============ CLASSWORK ============
-function loadClasswork() {
-    var content = document.getElementById('dashboardContent');
-    if (!content) return;
-    var html = '<h3>📝 Classwork</h3>';
-    html += '<div style="background:#fff3e0;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #c8943e;"><h4>➕ Post Classwork</h4><input type="text" id="cwTitle" placeholder="Title" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><input type="text" id="cwSubject" placeholder="Subject" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><textarea id="cwDescription" placeholder="Description" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea><input type="date" id="cwDueDate" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><button onclick="addClasswork()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;">Post</button></div><div id="cwList">Loading...</div>';
-    content.innerHTML = html;
-    
-    db.collection('classwork').orderBy('createdAt','desc').get().then(function(snapshot){
-        var list = document.getElementById('cwList');
-        if (!list) return;
-        if (snapshot.empty) { list.innerHTML = '<p style="color:#888;">No classwork yet.</p>'; return; }
-        var items = '';
-        snapshot.forEach(function(doc){
-            var c = doc.data();
-            items += '<div style="background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-left:4px solid #c8943e;position:relative;">' +
-                (userData && userData.role === 'teacher' ? '<button onclick="deleteClasswork(\'' + doc.id + '\')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>' : '') +
-                '<strong>' + (c.title||'N/A') + '</strong><small> (' + (c.subject||'General') + ')</small><p>' + (c.description||'') + '</p>' +
-                (c.dueDate ? '<p style="color:#c0392b;">📅 Due: ' + c.dueDate + '</p>' : '') +
-                '<small>By ' + (c.teacherName||'Teacher') + '</small></div>';
-        });
-        list.innerHTML = items;
-    }).catch(function(){ document.getElementById('cwList').innerHTML = '<p style="color:red;">Error loading.</p>'; });
-}
-
-function addClasswork() {
-    var title = document.getElementById('cwTitle').value.trim();
-    var subject = document.getElementById('cwSubject').value.trim();
-    var description = document.getElementById('cwDescription').value.trim();
-    var dueDate = document.getElementById('cwDueDate').value;
-    if (!title) { alert('Enter a title'); return; }
-    db.collection('classwork').add({ title: title, subject: subject, description: description, dueDate: dueDate, teacherName: (userData?userData.fullName:'Teacher'), createdAt: firebase.firestore.FieldValue.serverTimestamp() })
-        .then(function(){ showToast('Posted!','success'); loadClasswork(); })
-        .catch(function(err){ alert('Error: '+err.message); });
-}
-
-function deleteClasswork(id) {
-    if (!confirm('Delete?')) return;
-    db.collection('classwork').doc(id).delete().then(function(){ showToast('Deleted!','success'); loadClasswork(); });
-}
-
-// ============ PROGRESS & PROFILE ============
-function loadStudentProgress() {
-    var content = document.getElementById('dashboardContent');
-    if (!content) return;
-    content.innerHTML = '<h3>📊 Student Progress</h3><p style="color:#888;">Progress tracking loads here. Teachers can view all students, students see their own progress.</p>';
-}
-
-function loadProfile() {
-    var content = document.getElementById('dashboardContent');
-    if (!content) return;
-    content.innerHTML = '<div style="background:white;padding:20px;border-radius:12px;"><h3>👤 My Profile</h3><p><strong>Name:</strong> ' + (userData?userData.fullName:'N/A') + '</p><p><strong>Email:</strong> ' + (userData?userData.email:'N/A') + '</p><p><strong>Role:</strong> ' + (userData?userData.role:'N/A') + '</p></div>';
-}
-
-// ============ AUTH STATE LISTENER ============
-auth.onAuthStateChanged(function(user) {
-    if (user) {
-        currentUser = user;
-        db.collection('users').doc(user.uid).get().then(function(doc){
-            if (doc.exists) { userData = doc.data(); }
-            updateUI();
-        });
-    } else {
-        currentUser = null; userData = null;
-        localStorage.removeItem('mbogo_user');
-        updateUI();
-    }
-});
-// ============ INIT ============
-var storedUser = localStorage.getItem('mbogo_user');
-if (storedUser) {
-    try { userData = JSON.parse(storedUser); } catch(e) { localStorage.removeItem('mbogo_user'); }
-}
-updateUI();
-showPage('home');
-console.log('✅ Mbogo College School Ready!');
-</script>
-
-</body>
-</html>
-            
+<!-- Toast Container -->
+‎<div class="toast-container" id="toastContainer"></div>
+‎
+‎<!-- Navigation -->
+‎<nav class="navbar">
+‎    <div class="navbar-inner">
+‎        <a class="logo" onclick="showPage('home')">
+‎            <div class="logo-icon">MCS</div>
+‎            <div class="logo-text">
+‎                <h2>Mbogo College School</h2>
+‎                <small>Kampala, Uganda | Est. 2005</small>
+‎            </div>
+‎        </a>
+‎
+‎        <div class="hamburger" onclick="toggleMenu()">☰</div>
+‎
+‎        <ul class="nav-links" id="navLinks">
+‎            <li><a onclick="showPage('home')"><i class="fas fa-home"></i> Home</a></li>
+‎            <li><a onclick="showPage('about')"><i class="fas fa-info-circle"></i> About</a></li>
+‎            <li><a onclick="showPage('programs')"><i class="fas fa-graduation-cap"></i> Programs</a></li>
+‎            <li><a onclick="showPage('contact')"><i class="fas fa-envelope"></i> Contact</a></li>
+‎            <li id="navLogin"><button class="btn btn-outline btn-sm" onclick="openModal('loginModal')"><i class="fas fa-sign-in-alt"></i> Login</button></li>
+‎            <li id="navSignup"><button class="btn btn-primary btn-sm" onclick="openModal('signupModal')"><i class="fas fa-user-plus"></i> Sign Up</button></li>
+‎            <li id="navUser" style="display:none;"><span style="font-weight:600;" id="navUserName"></span></li>
+‎            <li id="navLogout" style="display:none;"><button class="btn btn-danger btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button></li>
+‎            <li id="navDashboard" style="display:none;"><button class="btn btn-primary btn-sm" onclick="showDashboard()"><i class="fas fa-tachometer-alt"></i> Dashboard</button></li>
+‎        </ul>
+‎    </div>
+‎</nav>
+‎
+‎<!-- HOME PAGE -->
+‎<div id="page-home">
+‎    <section class="hero">
+‎        <div class="hero-content">
+‎            <h1>Mbogo College School</h1>
+‎            <p class="subtitle">Shaping Future Leaders Since 2005</p>
+‎            <p style="font-size:1.1rem;margin-bottom:2rem;">A premier secondary school in Kampala, Uganda — combining academic excellence with character development, digital innovation, and holistic growth.</p>
+‎            <div class="hero-buttons">
+‎                <button class="btn btn-primary" style="font-size:1.1rem;padding:12px 30px;" onclick="openModal('signupModal')"><i class="fas fa-user-plus"></i> Enroll Now</button>
+‎                <button class="btn btn-outline" style="font-size:1.1rem;padding:12px 30px;border-color:white;color:white;" onclick="showPage('about')"><i class="fas fa-info-circle"></i> Discover More</button>
+‎            </div>
+‎            <div class="hero-stats">
+‎                <div class="stat-item"><div class="stat-number" id="visitorCount">0</div><div class="stat-label">Site Visitors</div></div>
+‎                <div class="stat-item"><div class="stat-number">20+</div><div class="stat-label">Years of Excellence</div></div>
+‎                <div class="stat-item"><div class="stat-number">50+</div><div class="stat-label">Dedicated Staff</div></div>
+‎                <div class="stat-item"><div class="stat-number">1500+</div><div class="stat-label">Students Enrolled</div></div>
+‎            </div>
+‎        </div>
+‎    </section>
+‎
+‎    <section class="section">
+‎        <h2 class="section-title">Why Choose Mbogo College?</h2>
+‎        <p class="section-subtitle">We provide a nurturing environment where students thrive academically, socially, and morally.</p>
+‎        <div class="card-grid">
+‎            <div class="card"><div class="card-body"><div class="card-icon"><i class="fas fa-chalkboard-teacher"></i></div><h3>Expert Faculty</h3><p>Highly qualified teachers with modern pedagogical approaches, committed to every student's success.</p></div></div>
+‎            <div class="card"><div class="card-body"><div class="card-icon"><i class="fas fa-laptop"></i></div><h3>Digital Learning</h3><p>State-of-the-art ICT infrastructure, online classwork, progress tracking, and digital resources.</p></div></div>
+‎            <div class="card"><div class="card-body"><div class="card-icon"><i class="fas fa-flask"></i></div><h3>Science Labs</h3><p>Well-equipped Physics, Chemistry, and Biology laboratories for hands-on practical learning.</p></div></div>
+‎            <div class="card"><div class="card-body"><div class="card-icon"><i class="fas fa-futbol"></i></div><h3>Sports & Arts</h3><p>Comprehensive programmes including football, netball, music, drama, and debate clubs.</p></div></div>
+‎            <div class="card"><div class="card-body"><div class="card-icon"><i class="fas fa-shield-alt"></i></div><h3>Discipline & Values</h3><p>Strong foundation in moral values, discipline, and character development.</p></div></div>
+‎            <div class="card"><div class="card-body"><div class="card-icon"><i class="fas fa-users"></i></div><h3>Parent Involvement</h3><p>Regular parent-teacher meetings and online progress tracking for guardians.</p></div></div>
+‎        </div>
+‎    </section>
+‎
+‎    <section class="section" style="background:var(--primary);color:white;max-width:100%;margin:0;">
+‎        <div style="max-width:1200px;margin:0 auto;text-align:center;">
+‎            <h2 style="color:var(--secondary);">What Parents Say</h2>
+‎            <p style="font-style:italic;font-size:1.2rem;max-width:700px;margin:1rem auto;">"Mbogo College has transformed my child. The teachers are dedicated, the environment is safe, and the online platform keeps me informed about my child's progress daily."</p>
+‎            <p style="font-weight:600;">— Mrs. Nakamya, Parent, Kampala</p>
+‎        </div>
+‎    </section>
+‎</div>
+‎
+‎<!-- ABOUT PAGE -->
+‎<div id="page-about" style="display:none;">
+‎    <section class="section">
+‎        <h2 class="section-title">About Mbogo College School</h2>
+‎        <p style="max-width:800px;margin:0 auto 2rem;text-align:center;font-size:1.1rem;">
+‎            Founded in 2005, Mbogo College School is a leading secondary school in Kampala, Uganda. We offer both O-Level and A-Level curricula following the Uganda National Examinations Board (UNEB) standards.
+‎        </p>
+‎        <div class="card-grid">
+‎            <div class="card"><div class="card-body"><i class="fas fa-bullseye" style="font-size:2rem;color:var(--secondary);"></i><h3>Our Mission</h3><p>To nurture holistic individuals equipped for higher education and life through quality teaching, discipline, and innovation.</p></div></div>
+‎            <div class="card"><div class="card-body"><i class="fas fa-eye" style="font-size:2rem;color:var(--secondary);"></i><h3>Our Vision</h3><p>To be the centre of academic excellence in East Africa, producing globally competitive graduates.</p></div></div>
+‎            <div class="card"><div class="card-body"><i class="fas fa-heart" style="font-size:2rem;color:var(--secondary);"></i><h3>Core Values</h3><p>Discipline • Integrity • Excellence • Innovation • Community • Respect</p></div></div>
+‎        </div>
+‎    </section>
+‎</div>
+‎
+‎<!-- PROGRAMS PAGE -->
+‎<div id="page-programs" style="display:none;">
+‎    <section class="section">
+‎        <h2 class="section-title">Academic Programmes</h2>
+‎        <div class="card-grid">
+‎            <div class="card"><div class="card-body"><i class="fas fa-atom" style="font-size:2rem;color:var(--secondary);"></i><h3>Sciences</h3><p>Physics, Chemistry, Biology, Mathematics — with fully equipped laboratories.</p></div></div>
+‎            <div class="card"><div class="card-body"><i class="fas fa-book" style="font-size:2rem;color:var(--secondary);"></i><h3>Humanities</h3><p>History, Geography, Literature, Religious Studies — fostering critical thinking.</p></div></div>
+‎            <div class="card"><div class="card-body"><i class="fas fa-code" style="font-size:2rem;color:var(--secondary);"></i><h3>ICT & Computer Studies</h3><p>Practical computing skills, coding, and digital literacy — powered by the School ICT Club.</p></div></div>
+‎        </div>
+‎    </section>
+‎</div>
+‎
+‎<!-- CONTACT PAGE -->
+‎<div id="page-contact" style="display:none;">
+‎    <section class="section">
+‎        <h2 class="section-title">Contact Us</h2>
+‎        <div class="card-grid">
+‎            <div class="card"><div class="card-body" style="text-align:center;">
+‎                <i class="fas fa-map-marker-alt" style="font-size:2.5rem;color:var(--secondary);"></i>
+‎                <h3>Address</h3><p>Plot 42, Mbogo Road<br>P.O. Box 10320<br>Kampala, Uganda</p>            </div></div>
+‎            <div class="card"><div class="card-body" style="text-align:center;">
+‎                <i class="fas fa-phone" style="font-size:2.5rem;color:var(--secondary);"></i>
+‎                <h3>Phone</h3><p>+256 703 204 367</p>
+‎            </div></div>
+‎            <div class="card"><div class="card-body" style="text-align:center;">
+‎                <i class="fas fa-envelope" style="font-size:2.5rem;color:var(--secondary);"></i>
+‎                <h3>Email</h3><p>mbogocollegeschool@yahoo.com</p>
+‎            </div></div>
+‎        </div>
+‎    </section>
+‎</div>
+‎
+‎
+‎<!-- DASHBOARD -->
+‎<div class="dashboard-layout" id="dashboardLayout">
+‎    <aside class="sidebar">
+‎        <h3 style="margin-bottom:1rem;color:#1a3a5c;padding:10px;">📋 Menu</h3>
+‎        <ul class="sidebar-menu" style="list-style:none;padding:0;">
+‎            <li><a onclick="loadAnnouncements()" style="cursor:pointer;display:block;padding:12px 15px;margin:5px 0;background:#f5f6fa;border-radius:8px;text-decoration:none;color:#333;font-weight:500;">📢 Announcements</a></li>
+‎            <li><a onclick="loadTimetable()" style="cursor:pointer;display:block;padding:12px 15px;margin:5px 0;background:#f5f6fa;border-radius:8px;text-decoration:none;color:#333;font-weight:500;">📅 Timetable</a></li>
+‎            <li><a onclick="loadClasswork()" style="cursor:pointer;display:block;padding:12px 15px;margin:5px 0;background:#f5f6fa;border‎   -radius:8px;text-decoration:none;color:#333;font-weight:500;">📝 Classwork</a></li>
+‎            <li><a onclick="loadStudentProgress()" style="cursor:pointer;display:block;padding:12px 15px;margin:5px 0;background:#f5f6fa;border-radius:8px;text-decoration:none;color:#333;font-weight:500;">📊 Progress</a></li>
+‎            <li><a onclick="loadProfile()" style="cursor:pointer;display:block;padding:12px 15px;margin:5px 0;background:#f5f6fa;border-radius:8px;text-decoration:none;color:#333;font-weight:500;">👤 Profile</a></li>
+‎        </ul>
+‎    </aside>
+‎
+‎    <main class="main-content" id="dashboardContent">
+‎        <div style="text-align:center;padding:50px 20px;color:#888;">
+‎            <div style="font-size:4rem;margin-bottom:20px;">👋</div>
+‎            <h3>Welcome, <span id="dashUserName">Teacher</span>!</h3>
+‎            <p>Select an option from the menu to get started.</p>
+‎        </div>
+‎    </main>
+‎</div>
+‎<div class="dashboard-layout" id="dashboardLayout">
+‎    <aside class="sidebar">
+‎        </aside>
+‎
+‎        <!-- Dynamic content loads here -->
+‎    </main>
+‎</div>
+‎
+‎<!-- SIGNUP MODAL -->
+‎<div class="form-group" id="parentEmailGroup" style="display:none;">
+‎    <label>Parent/Guardian Email (for students)</label>
+‎    <input type="email" class="form-control" id="parentEmail" placeholder="Enter parent's email address">
+‎</div>
+‎<div class="modal-overlay" id="signupModal">
+‎    <div class="modal">
+‎        <div class="modal-header">
+‎            <h3><i class="fas fa-user-plus"></i> Create Account</h3>
+‎            <button class="modal-close" onclick="closeModal('signupModal')">&times;</button>
+‎        </div>
+‎        <div class="modal-body">
+‎            <form id="signupForm" onsubmit="signup(event)">
+‎                <div class="form-group">
+‎                    <label>Full Name *</label>
+‎                    <input type="text" class="form-control" id="signupName" required placeholder="Enter your full name">
+‎                </div>
+‎                <div class="form-group">
+‎                    <label>Email Address *</label>
+‎                    <input type="email" class="form-control" id="signupEmail" required placeholder="Enter your email">
+‎                </div>
+‎                <div class="form-group">
+‎                    <label>Password * (min 8 characters)</label>
+‎                    <input type="password" class="form-control" id="signupPassword" required minlength="8" placeholder="Create a strong password">
+‎                </div>
+‎                <div class="form-group">
+‎                    <label>Confirm Password *</label>
+‎                    <input type="password" class="form-control" id="signupConfirmPassword" required minlength="8" placeholder="Confirm your password">
+‎</div>
+‎               <div class="form-group" id="teacherCodeGroup" style="display:none;">
+‎    <label>Teacher Approval Code *</label>
+‎    <input type="password" class="form-control" id="teacherCode" placeholder="Enter the teacher registration code">
+‎</div>
+‎                <div class="form-group">
+‎                    <label>Role *</label>
+‎                    <select class="form-control" id="signupRole" required>
+‎                        <option value="">Select your role</option>
+‎                        <option value="student">Student</option>
+‎                        <option value="teacher">Teacher</option>
+‎                        <option value="parent">Parent/Guardian</option>
+‎                    </select>
+‎                </div>
+‎                <button type="submit" class="btn btn-primary" style="width:100%;">Create Account</button>
+‎            </form>
+‎        </div>
+‎    </div>
+‎</div>
+‎<div class="form-group" id="teacherCodeGroup" style="display:none;">
+‎    <label>Teacher Registration Code *</label>
+‎    <input type="password" class="form-control" id="teacherCode" placeholder="Enter the teacher code provided by administration">
+‎</div>
+‎
+‎<!-- LOGIN MODAL -->
+‎<div class="modal-overlay" id="loginModal">
+‎    <div class="modal">
+‎        <div class="modal-header">
+‎            <h3><i class="fas fa-sign-in-alt"></i> Login</h3>
+‎            <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
+‎        </div>
+‎        <div class="modal-body">
+‎            <form id="loginForm" onsubmit="login(event)">
+‎                <div class="form-group">
+‎                    <label>Email Address *</label>
+‎                    <input type="email" class="form-control" id="loginEmail" required placeholder="Enter your email">
+‎                </div>
+‎                <div class="form-group">
+‎                    <label>Password *</label>
+‎                    <input type="password" class="form-control" id="loginPassword" required placeholder="Enter your password">
+‎                </div>
+‎                <button type="submit" class="btn btn-primary" style="width:100%;">Login</button>
+‎            </form>
+‎            <p style="text-align:center;margin-top:1rem;">
+‎                <a href="#" onclick="closeModal('loginModal');openModal('forgotPasswordModal')" style="color:var(--info);">Forgot Password?</a>
+‎            </p>
+‎            <p style="text-align:center;margin-top:0.5rem;">
+‎                No account? <a href="#" onclick="closeModal('loginModal');openModal('signupModal')" style="color:var(--primary);">Sign Up</a>
+‎            </p>
+‎        </div>
+‎    </div>
+‎</div>
+‎
+‎<!-- FORGOT PASSWORD MODAL -->
+‎<div class="modal-overlay" id="forgotPasswordModal">
+‎    <div class="modal">
+‎        <div class="modal-header">
+‎            <h3><i class="fas fa-key"></i> Reset Password</h3>
+‎            <button class="modal-close" onclick="closeModal('forgotPasswordModal')">&times;</button>
+‎        </div>
+‎        <div class="modal-body">
+‎            <p style="margin-bottom:1rem;">Enter your email address and we'll send you a password reset link.</p>
+‎            <form onsubmit="resetPassword(event)">
+‎                <div class="form-group">
+‎                    <label>Email Address *</label>
+‎                    <input type="email" class="form-control" id="resetEmail" required placeholder="Enter your registered email">
+‎                </div>
+‎                <button type="submit" class="btn btn-primary" style="width:100%;">Send Reset Link</button>
+‎            </form>
+‎        </div>
+‎    </div>
+‎</div>
+‎
+‎<!-- Footer -->
+‎<footer class="footer">
+‎    <div class="footer-grid">
+‎        <div>
+‎            <h4>Mbogo College School</h4>
+‎            <p>Education is Value.</p>
+‎<h4>2026 year theme: <br> Discipline Today, Success Tomorrow.</h4>
+‎            <p>P.O. Box 10320, Kampala, Uganda</p>
+‎            <p>📞 +256 703 204 367</p>
+‎            <p>✉️ mbogocollegeschool@yahoo.com</p>
+‎            <div class="ict-badge">
+‎                <i class="fas fa-laptop-code"></i> Built by ICT Club MCS
+‎            </div>
+‎        </div>
+‎        <div>
+‎            <h4>Quick Links</h4>
+‎            <a onclick="showPage('home')">Home</a>
+‎            <a onclick="showPage('about')">About Us</a>
+‎            <a onclick="showPage('programs')">Programmes</a>
+‎            <a onclick="showPage('contact')">Contact</a>
+‎        </div>
+‎    </div>
+‎    <div class="footer-bottom">
+‎        <p>&copy; 2026 Mbogo College School. All rights reserved.</p>
+‎        <p style="font-size:0.8rem;margin-top:5px;">Website proudly developed by the <strong>ICT Club - Mbogo College School</strong></p>
+‎    </div>
+‎</footer>
+‎
+‎
+‎<script>
+‎// ============ FIREBASE CONFIGURATION ============
+‎const firebaseConfig = {
+‎  apiKey: "AIzaSyAjM2lMoD3E7zr8MnCSU5cqUxfqUCQEsZM",
+‎  authDomain: "mbogo-college-school-36e7c.firebaseapp.com",
+‎  projectId: "mbogo-college-school-36e7c",
+‎  storageBucket: "mbogo-college-school-36e7c.firebasestorage.app",
+‎  messagingSenderId: "66126002537",
+‎  appId: "1:66126002537:web:9187261918ae640d9465f8"
+‎};
+‎
+‎
+‎// Initialize Firebase
+‎const app = initializeApp(firebaseConfig);
+‎
+‎console.log('Step 1: Firebase OK');
+‎
+‎// Test navigation
+‎function showPage(page) { console.log('showPage:', page); }
+‎function openModal(id) { console.log('openModal:', id); }
+‎function closeModal(id) { console.log('closeModal:', id); }
+‎function toggleMenu() { console.log('toggleMenu'); }
+‎// ============ GLOBAL STATE ============
+‎let currentUser = null;
+‎let userData = null;
+‎
+‎// ============ TOAST NOTIFICATIONS ============
+‎function showToast(message, type = 'success') {
+‎    const container = document.getElementById('toastContainer');
+‎    if (!container) return;
+‎    const toast = document.createElement('div');
+‎    toast.className = `toast ${type}`;
+‎    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+‎    toast.innerHTML = `${icons[type] || ''} ${message}`;
+‎    toast.style.cssText = 'padding:15px 20px;border-radius:8px;color:white;margin-bottom:10px;animation:slideIn 0.3s ease;box-shadow:0 4px 12px rgba(0,0,0,0.2);';
+‎    toast.style.background = type === 'success' ? '#2d8a4e' : type === 'error' ? '#c0392b' : type === 'warning' ? '#e67e22' : '#2980b9';
+‎    container.appendChild(toast);
+‎    setTimeout(() => toast.remove(), 4000);
+‎}
+‎
+‎// ============ NAVIGATION ============
+‎function showPage(page) {
+‎    document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
+‎    const dashboard = document.getElementById('dashboardLayout');
+‎    if (dashboard) dashboard.classList.remove('active');
+‎    const pageEl = document.getElementById('page-' + page);
+‎    if (pageEl) pageEl.style.display = 'block';
+‎    window.scrollTo({ top: 0, behavior: 'smooth' });
+‎}
+‎
+‎function openModal(id) {
+‎    document.getElementById(id)?.classList.add('active');
+‎}
+‎
+‎function closeModal(id) {
+‎    document.getElementById(id)?.classList.remove('active');
+‎}
+‎
+‎function toggleMenu() {
+‎    document.getElementById('navLinks')?.classList.toggle('active');
+‎}
+‎
+‎// Close modals when clicking outside
+‎window.onclick = function(event) {
+‎    if (event.target.classList.contains('modal-overlay')) {
+‎        event.target.classList.remove('active');
+‎    }
+‎};
+‎
+‎// ============ AUTHENTICATION ============
+‎// Teacher secret code
+‎const TEACHER_SECRET_CODE = "MbogoTeachers2026";
+‎
+‎async function signup(event) {
+‎    event.preventDefault();
+‎
+‎    const name = document.getElementById('signupName')?.value?.trim();
+‎    const email = document.getElementById('signupEmail')?.value?.trim();
+‎    const password = document.getElementById('signupPassword')?.value;
+‎    const confirmPassword = document.getElementById('signupConfirmPassword')?.value;
+‎    const role = document.getElementById('signupRole')?.value;
+‎    const parentEmail = document.getElementById('parentEmail')?.value?.trim();
+‎
+‎    // Basic validation
+‎    if (!name || !email || !password || !role) {
+‎        showToast('Please fill all required fields', 'error');
+‎        return;
+‎    }
+‎
+‎    if (password !== confirmPassword) {
+‎        showToast('Passwords do not match!', 'error');
+‎        return;
+‎    }
+‎
+‎    if (password.length < 8) {
+‎        showToast('Password must be at least 8 characters', 'error');
+‎        return;
+‎    }
+‎
+‎    // Email format validation
+‎    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+‎    if (!emailRegex.test(email)) {
+‎        showToast('Please enter a valid email address', 'error');
+‎        return;
+‎    }
+‎
+‎    // Block disposable email domains
+‎    const blockedDomains = [
+‎        'mailinator.com', 'tempmail.com', 'yopmail.com',
+‎        'guerrillamail.com', '10minutemail.com', 'throwaway.com'
+‎    ];
+‎    const emailDomain = email.split('@')[1]?.toLowerCase();
+‎    if (blockedDomains.includes(emailDomain)) {
+‎        showToast('Please use a real email address. Temporary emails are not allowed.', 'error');
+‎        return;
+‎    }
+‎
+‎    // 🔒 TEACHER CODE CHECK
+‎    if (role === 'teacher') {
+‎        const enteredCode = document.getElementById('teacherCode')?.value;
+‎        if (enteredCode !== TEACHER_SECRET_CODE) {
+‎            showToast('Invalid teacher registration code. Contact the school administration.', 'error');
+‎            return;
+‎        }
+‎    }
+‎
+‎    try {
+‎        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+‎        const user = userCredential.user;
+‎
+‎        const userDoc = {
+‎            fullName: name,
+‎            email: email,
+‎            role: role,
+‎            parentEmail: parentEmail || null,
+‎            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+‎        };
+‎
+‎        await db.collection('users').doc(user.uid).set(userDoc);
+‎
+‎        if (role === 'student' && parentEmail) {
+‎            await db.collection('parentLinks').add({
+‎                studentId: user.uid,
+‎                studentName: name,
+‎                parentEmail: parentEmail,
+‎                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+‎            });
+‎        }
+‎
+‎        showToast('Account created successfully! Welcome, ' + name + '!', 'success');
+‎        closeModal('signupModal');
+‎
+‎    } catch (error) {
+‎        console.error('Signup error:', error);
+‎        let message = error.message;
+‎        if (error.code === 'auth/email-already-in-use') message = 'This email is already registered. Please login instead.';
+‎        if (error.code === 'auth/invalid-email') message = 'Please enter a valid email address.';
+‎        if (error.code === 'auth/weak-password') message = 'Password is too weak. Use at least 8 characters.';
+‎        showToast(message, 'error');
+‎    }
+‎}
+‎
+‎// Show/hide teacher code field when role changes
+‎document.getElementById('signupRole')?.addEventListener('change', function() {
+‎    const teacherCodeGroup = document.getElementById('teacherCodeGroup');
+‎    const teacherCode = document.getElementById('teacherCode');
+‎    if (this.value === 'teacher') {
+‎        if (teacherCodeGroup) teacherCodeGroup.style.display = 'block';
+‎        if (teacherCode) teacherCode.required = true;
+‎    } else {
+‎        if (teacherCodeGroup) teacherCodeGroup.style.display = 'none';
+‎        if (teacherCode) teacherCode.required = false;
+‎    }
+‎});
+‎
+‎async function login(event) {
+‎    event.preventDefault();
+‎
+‎    const email = document.getElementById('loginEmail')?.value?.trim();
+‎    const password = document.getElementById('loginPassword')?.value;
+‎
+‎    if (!email || !password) {
+‎        showToast('Please enter email and password', 'error');
+‎        return;
+‎    }
+‎
+‎    try {
+‎        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+‎        const user = userCredential.user;
+‎
+‎        // Get user data from Firestore
+‎        const userDoc = await db.collection('users').doc(user.uid).get();
+‎
+‎        if (userDoc.exists) {
+‎            userData = userDoc.data();
+‎        } else {
+‎            userData = { fullName: user.email, email: user.email, role: 'student' };
+‎        }
+‎
+‎        currentUser = user;
+‎        localStorage.setItem('mbogo_user', JSON.stringify(userData));
+‎
+‎        showToast('Welcome back, ' + (userData.fullName?.split(' ')[0] || 'User') + '!', 'success');
+‎        closeModal('loginModal');
+‎        updateUIBasedOnAuth();
+‎        showDashboard();
+‎
+‎    } catch (error) {
+‎        console.error('Login error:', error);
+‎        let message = error.message;
+‎        if (error.code === 'auth/user-not-found') message = 'No account found with this email. Please sign up first.';
+‎        if (error.code === 'auth/wrong-password') message = 'Incorrect password. Please try again.';
+‎        if (error.code === 'auth/invalid-email') message = 'Invalid email address.';
+‎        if (error.code === 'auth/too-many-requests') message = 'Too many attempts. Please try again later.';
+‎        showToast(message, 'error');
+‎    }
+‎}
+‎async function logout() {
+‎    try {
+‎        await auth.signOut();
+‎        currentUser = null;
+‎        userData = null;
+‎        localStorage.removeItem('mbogo_user');
+‎        updateUIBasedOnAuth();
+‎        showPage('home');
+‎        showToast('Logged out successfully.', 'success');
+‎    } catch (error) {
+‎        showToast('Error logging out', 'error');
+‎    }
+‎}
+‎
+‎function updateUIBasedOnAuth() {
+‎    const navLogin = document.getElementById('navLogin');
+‎    const navSignup = document.getElementById('navSignup');
+‎    const navUser = document.getElementById('navUser');
+‎    const navLogout = document.getElementById('navLogout');
+‎    const navDashboard = document.getElementById('navDashboard');
+‎    const navUserName = document.getElementById('navUserName');
+‎
+‎    if (currentUser && userData) {
+‎        if (navLogin) navLogin.style.display = 'none';
+‎        if (navSignup) navSignup.style.display = 'none';
+‎        if (navUser) navUser.style.display = 'block';
+‎        if (navLogout) navLogout.style.display = 'block';
+‎        if (navDashboard) navDashboard.style.display = 'block';
+‎        if (navUserName) navUserName.textContent = '👋 ' + userData.fullName.split(' ')[0];
+‎    } else {
+‎        if (navLogin) navLogin.style.display = 'block';
+‎        if (navSignup) navSignup.style.display = 'block';
+‎        if (navUser) navUser.style.display = 'none';
+‎        if (navLogout) navLogout.style.display = 'none';
+‎        if (navDashboard) navDashboard.style.display = 'none';
+‎    }
+‎}
+‎// ============ NAVIGATION ============
+‎function showPage(page) {
+‎    document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
+‎    const dashboard = document.getElementById('dashboardLayout');
+‎    if (dashboard) { dashboard.style.display = 'none'; dashboard.classList.remove('active'); }
+‎    const pageEl = document.getElementById('page-' + page);
+‎    if (pageEl) pageEl.style.display = 'block';
+‎    window.scrollTo({ top: 0, behavior: 'smooth' });
+‎}
+‎
+‎function openModal(id) {
+‎    document.getElementById(id)?.classList.add('active');
+‎}
+‎
+‎function closeModal(id) {
+‎    document.getElementById(id)?.classList.remove('active');
+‎}
+‎
+‎function toggleMenu() {
+‎    document.getElementById('navLinks')?.classList.toggle('active');
+‎}
+‎
+‎window.onclick = function(event) {
+‎    if (event.target.classList.contains('modal-overlay')) {
+‎        event.target.classList.remove('active');
+‎    }
+‎};
+‎            // ============ DASHBOARD ============
+‎function showDashboard() {
+‎    document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
+‎    const dashboard = document.getElementById('dashboardLayout');
+‎    if (dashboard) { dashboard.style.display = 'grid'; dashboard.classList.add('active'); }
+‎    const dashUserName = document.getElementById('dashUserName');
+‎    if (dashUserName && userData) dashUserName.textContent = userData.fullName || 'User';
+‎    loadAnnouncements();
+‎    window.scrollTo({ top: 0, behavior: 'smooth' });
+‎}
+‎
+‎// ============ ANNOUNCEMENTS ============
+‎function loadAnnouncements() {
+‎    const content = document.getElementById('dashboardContent');
+‎    if (!content) return;
+‎    let html = '<h3>📢 Announcements</h3>';
+‎    html += `<div style="background:#e8f0ff;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #2980b9;"><h4>➕ Post Announcement</h4><input type="text" id="newsTitle" placeholder="Title *" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><textarea id="newsContent" placeholder="Content" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea><button onclick="postAnnouncement()" style="background:#2980b9;color:white;padding:10px 20px;border:none;border-radius:25px;">Post</button></div><div id="newsList">Loading...</div>`;
+‎    content.innerHTML = html;
+‎    db.collection('announcements').orderBy('createdAt','desc').get().then(snapshot => {
+‎        const list = document.getElementById('newsList');
+‎        if (!list) return;
+‎        if (snapshot.empty) { list.innerHTML = '<p style="color:#888;">No announcements yet.</p>'; return; }
+‎        let items = '';
+‎        snapshot.forEach(doc => {
+‎       const n = doc.data();
+‎            items += `<div style="background:white;padding:12px;margin:8px 0;border-radius:8px;border-left:4px solid #2980b9;position:relative;">${userData&&userData.role==='teacher'?`<button onclick="deleteAnnouncement('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;    content.innerHTML = html;
+‎    db.collection('timetable').get().then(snapshot => {
+‎        const list = document.getElementById('ttList');
+‎        if (!list) return;
+‎        if (snapshot.empty) { list.innerHTML = '<p style="color:#888;">No timetable entries yet.</p>'; return; }
+‎        let items = '';
+‎        snapshot.forEach(doc => {
+‎            const t = doc.data();
+‎            items += `<div style="background:white;padding:12px;margin:5px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);position:relative;">${userData&&userData.role==='teacher'?`<button onclick="deleteTimetable('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>`:''}<strong>${t.day||'N/A'}</strong><p>📖 ${t.subject||'N/A'}</p><small>⏰ ${t.time||'N/A'}</small><br><small>👨‍🏫 ${t.teacher||'N/A'}</small></div>`;
+‎        });
+‎        list.innerHTML = items;
+‎    }).catch(err => { document.getElementById('ttList').innerHTML = '<p style="color:red;">Error</p>'; });
+‎}
+‎function addTimetable() {
+‎    const day = document.getElementById('ttDay')?.value;
+‎    const time = document.getElementById('ttTime')?.value?.trim();
+‎    const subject = document.getElementById('ttSubject')?.value?.trim();
+‎    const teacher = document.getElementById('ttTeacher')?.value?.trim();
+‎    if (!time || !subject) { alert('Fill time and subject'); return; }
+‎    db.collection('timetable').add({ day, time, subject, teacher: teacher||'Staff', createdAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => { showToast('Added!','success'); loadTimetable(); }).catch(err => alert('Error: '+err.message));
+‎}
+‎function deleteTimetable(id) { if (!confirm('Delete?')) return; db.collection('timetable').doc(id).delete().then(() => { showToast('Deleted!','success'); loadTimetable(); }).catch(err => showToast('Error: '+err.message,'error')); }
+‎
+‎// ============ CLASSWORK ============
+‎function loadClasswork() {
+‎    const content = document.getElementById('dashboardContent');
+‎    if (!content) return;
+‎    let html = '<h3>📝 Classwork</h3>';
+‎    html += `<div style="background:#fff3e0;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #c8943e;"><h4>➕ Post Classwork</h4><input type="text" id="cwTitle" placeholder="Title *" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><input type="text" id="cwSubject" placeholder="Subject" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><textarea id="cwDescription" placeholder="Description" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea><input type="date" id="cwDueDate" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><button onclick="addClasswork()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;">Post</button></div><div id="cwList">Loading...</div>`;
+‎    content.innerHTML = html;db.collection('classwork').orderBy('createdAt','desc').get().then(snapshot => {
+‎        const list = document.getElementById('cwList');
+‎        if (!list) return;
+‎        if (snapshot.empty) { list.innerHTML = '<p style="color:#888;">No classwork yet.</p>'; return; }
+‎        let items = '';
+‎        snapshot.forEach(doc => {
+‎            const c = doc.data();
+‎            items += `<div style="background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-left:4px solid #c8943e;position:relative;">${userData&&userData.role==='teacher'?`<button onclick="deleteClasswork('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>`:''}<strong>${c.title||'N/A'}</strong><small> (${c.subject||'General'})</small><p>${c.description||''}</p>${c.dueDate?'<p style="color:#c0392b;">📅 Due: '+c.dueDate+'</p>':''}<small>By ${c.teacherName||'Teacher'}</small></div>`;
+‎        });
+‎        list.innerHTML = items;
+‎    }).catch(err => { document.getElementById('cwList').innerHTML = '<p style="color:red;">Error</p>'; });
+‎}
+‎function addClasswork() {
+‎    const title = document.getElementById('cwTitle')?.value?.trim();
+‎    const subject = document.getElementById('cwSubject')?.value?.trim();
+‎    const description = document.getElementById('cwDescription')?.value?.trim();
+‎    const dueDate = document.getElementById('cwDueDate')?.value;
+‎    if (!title) { alert('Enter a title'); return; }
+‎    db.collection('classwork').add({ title, subject, description, dueDate, teacherName: userData?.fullName||'Teacher', createdAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => { showToast('Posted!','success'); loadClasswork(); }).catch(err => alert('Error: '+err.message));
+‎}
+‎function deleteClasswork(id) { if (!confirm('Delete?')) return; db.collection('classwork').doc(id).delete().then(() => { showToast('Deleted!','success'); loadClasswork(); }).catch(err => showToast('Error: '+err.message,'error')); }
+‎
+‎// ============ PROGRESS & PROFILE ============
+‎function loadStudentProgress() {
+‎    const content = document.getElementById('dashboardContent');
+‎    if (!content) return;
+‎    content.innerHTML = '<h3>📊 Progress</h3><p style="color:#888;">Progress tracking loads here.</p>';
+‎}
+‎function loadProfile() {
+‎    const content = document.getElementById('dashboardContent');
+‎    if (!content) return;
+‎    content.innerHTML = `<div style="background:white;padding:20px;border-radius:12px;"><h3>👤 Profile</h3><p><strong>Name:</strong> ${userData?.fullName||'N/A'}</p><p><strong>Email:</strong> ${userData?.email||'N/A'}</p><p><strong>Role:</strong> ${userData?.role||'N/A'}</p></div>`;
+‎}
+‎
+‎// ============ PROFILE ============
+‎function loadProfile() {
+‎    const content = document.getElementById('dashboardContent');
+‎    if (!content) return;
+‎
+‎    content.innerHTML = `
+‎        <h3>👤 My Profile</h3>
+‎        <div style="background:white;padding:20px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
+‎            <p><strong>Name:</strong> ${userData?.fullName || 'N/A'}</p>
+‎            <p><strong>Email:</strong> ${userData?.email || 'N/A'}</p>
+‎            <p><strong>Role:</strong> ${userData?.role || 'N/A'}</p>
+‎        </div>
+‎    `;
+‎}
+‎// ============ loadStudentProgress ============
+‎// The loadStudentProgress function above already handles:
+‎// - Teachers: see all students
+‎// - Students: see own progress
+‎// - Parents: handled below
+‎
+‎fu// ============ loadStudentProgress ============
+‎// The loadStudentProgress function above already handles:
+‎// - Teachers: see all stunction loadParentProgress() {
+‎    const content = document.getElementById('dashboardContent');
+‎    if (!content) return;
+‎
+‎    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading your child\'s progress...</p>';
+‎
+‎    if (!userData || userData.role !== 'parent') {
+‎        content.innerHTML = '<p style="color:#888;">This section is for parents only.</p>';
+‎        return;
+‎    }
+‎
+‎    db.collection('parentLinks')
+‎        .where('parentEmail', '==', userData.email)
+‎        .get()
+‎        .then(linkSnapshot => {
+‎            if (linkSnapshot.empty) {
+‎                content.innerHTML = '<h3>👨‍👩‍👧 Child Progress</h3><p style="color:#888;">No child accounts linked. When your child signs up with your email, their progress will appear here.</p>';
+‎                return;
+‎            }
+‎
+‎            let html = '<h3>👨‍👩‍👧 Your Child\'s Progress</h3>';
+‎            let promises = [];
+‎
+‎            linkSnapshot.forEach(linkDoc => {
+‎                const link = linkDoc.data();
+‎                const promise = db.collection('users').doc(link.studentId).get()
+‎                    .then(studentDoc => {
+‎                        if (!studentDoc.exists) return;
+‎                        const student = studentDoc.data();
+‎
+‎                        return db.collection('submissions')
+‎                            .where('studentId', '==', link.studentId)
+‎                            .get()
+‎                            .then(submissionsSnapshot => {
+‎                                const submitted = submissionsSnapshot.size;
+‎                                const total = Math.max(submitted + 2, 1);
+‎                                const percent = Math.round((submitted / total) * 100);
+‎
+‎                                html += `
+‎                                    <div style="background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
+‎                                        <h4>👦 ${student.fullName || 'Student'}</h4>
+‎                                        <div style="height:10px;background:#eee;border-radius:5px;margin:10px 0;">
+‎                                            <div style="height:100%;width:${percent}%;background:#2d8a4e;border-radius:5px;"></div>
+‎                                        </div>
+‎                                        <small>${submitted}/${total} assignments completed (${percent}%)</small>
+‎                                    </div>
+‎                                `;
+‎                            });
+‎                    });
+‎                promises.push(promise);
+‎            });
+‎
+‎            Promise.all(promises).then(() => {
+‎                content.innerHTML = html;
+‎            });
+‎        })
+‎        .catch(err => {
+‎            content.innerHTML = '<p style="color:red;">Error loading progress.</p>';
+‎        });
+‎}
+‎‎
+‎// ============ AUTH STATE LISTENER ============
+‎auth.onAuthStateChanged(async (user) => {
+‎    if (user) {
+‎        currentUser = user;
+‎        try {
+‎            const userDoc = await db.collection('users').doc(user.uid).get();
+‎            if (userDoc.exists) {
+‎                userData = userDoc.data();
+‎            }
+‎        } catch (error) {
+‎            console.error('Error fetching user data:', error);
+‎        }
+‎    } else {
+‎        currentUser = null;
+‎        userData = null;
+‎        localStorage.removeItem('mbogo_user');
+‎    }
+‎    updateUIBasedOnAuth();
+‎});
+‎
+‎// ============ INITIALIZATION ============
+‎// Check for stored user
+‎const storedUser = localStorage.getItem('mbogo_user');
+‎if (storedUser && auth.currentUser) {
+‎    try {
+‎        userData = JSON.parse(storedUser);
+‎        currentUser = auth.currentUser;
+‎        updateUIBasedOnAuth();
+‎        showDashboard();
+‎    } catch (e) {
+‎        localStorage.removeItem('mbogo_user');
+‎        showPage('home');
+‎    }
+‎} else {
+‎    showPage('home');
+‎}
+‎
+‎console.log('✅ Mbogo College School Ready!');
+‎console.log('📧 mbogocollegeschool@yahoo.com');
+‎console.log('📞 +256 703 204 367');
+‎
+‎// ============ ANNOUNCEMENTS ============
+‎function loadAnnouncements() {
+‎    const content = document.getElementById('dashboardContent');
+‎    if (!content) return;
+‎
+‎    let html = '<h3>📢 Announcements</h3>';
+‎    html += `
+‎        <div style="background:#e8f0ff;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #2980b9;">
+‎            <h4>➕ Post Announcement</h4>
+‎            <input type="text" id="newsTitle" placeholder="Title *" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+‎            <textarea id="newsContent" placeholder="Content" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea>
+‎            <button onclick="postAnnouncement()" style="background:#2980b9;color:white;padding:10px 20px;border:none;border-radius:25px;">Post</button>
+‎        </div>
+‎    `;
+‎    html += '<div id="newsList">Loading...</div>';
+‎    content.innerHTML = html;
+‎
+‎    db.collection('announcements').orderBy('createdAt', 'desc').get()
+‎        .then(snapshot => {
+‎            const list = document.getElementById('newsList');
+‎            if (!list) return;
+‎            if (snapshot.empty) { list.innerHTML = '<p style="color:#888;">No announcements yet.</p>'; return; }
+‎            let items = '';
+‎            snapshot.forEach(doc => {
+‎                const n = doc.data();
+‎                items += `<div style="background:white;padding:12px;margin:8px 0;border-radius:8px;border-left:4px solid #2980b9;position:relative;">
+‎                    ${userData&&userData.role==='teacher'?`<button onclick="deleteAnnouncement('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>`:''}
+‎                    <strong>${n.title||'N/A'}</strong><p>${n.content||''}</p><small>By ${n.author||'Admin'}</small></div>`;
+‎            });
+‎            list.innerHTML = items;
+‎        }).catch(err => { document.getElementById('newsList').innerHTML = '<p style="color:red;">Error</p>'; });
+‎}
+‎
+‎function postAnnouncement() {
+‎    const title = document.getElementById('newsTitle')?.value?.trim();
+‎    const content = document.getElementById('newsContent')?.value?.trim();
+‎    if (!title || !content) { alert('Fill both fields'); return; }
+‎    db.collection('announcements').add({ title, content, author: userData?.fullName || 'Admin', createdAt: firebase.firestore.FieldValue.serverTimestamp() })
+‎        .then(() => { showToast('Posted!','success'); loadAnnouncements(); })
+‎        .catch(err => showToast('Error: '+err.message,'error'));
+‎}
+‎
+‎function deleteAnnouncement(id) {
+‎    if (!confirm('Delete?')) return;
+‎    db.collection('announcements').doc(id).delete()
+‎        .then(() => { showToast('Deleted!','success'); loadAnnouncements(); })
+‎        .catch(err => showToast('Error: '+err.message,'error'));
+‎}
+‎
+‎// ============ PROGRESS ============
+‎function loadStudentProgress() {
+‎    const content = document.getElementById('dashboardContent');
+‎    if (!content) return;
+‎    content.innerHTML = '<p>Loading progress...</p>';
+‎
+‎    if (userData && userData.role === 'teacher') {
+‎        db.collection('users').where('role','==','student').get()
+‎            .then(snapshot => {
+‎                if (snapshot.empty) { content.innerHTML = '<h3>📊 Progress</h3><p style="color:#888;">No students yet.</p>'; return; }
+‎                let items = '<h3>📊 Student Progress</h3>';
+‎                snapshot.forEach(doc => {
+‎                    const s = doc.data();
+‎                    items += `<div style="background:white;padding:10px;margin:5px 0;border-radius:8px;"><strong>${s.fullName||'Student'}</strong><div style="height:8px;background:#eee;border-radius:4px;margin:5px 0;"><div style="height:100%;width:50%;background:#2d8a4e;border-radius:4px;"></div></div><small>Progress: 50%</small></div>`;
+‎                });
+‎                content.innerHTML = items;
+‎            });
+‎    } else {
+‎        content.innerHTML = '<h3>📊 Progress</h3><p style="color:#888;">Your progress appears here as you submit work.</p>';
+‎    }
+‎}
+‎
+‎// ============ PROFILE ============
+‎function loadProfile() {
+‎    const content = document.getElementById('dashboardContent');
+‎    if (!content) return;
+‎    content.innerHTML = `<div style="background:white;padding:20px;border-radius:12px;"><h3>👤 Profile</h3><p><strong>Name:</strong> ${userData?.fullName||'N/A'}</p><p><strong>Email:</strong> ${userData?.email||'N/A'}</p><p><strong>Role:</strong> ${userData?.role||'N/A'}</p></div>`;
+‎}
+‎
+‎async function loadTimetable() {
+‎    const content = document.getElementById('dashboardContent');
+‎    if (!content) return;
+‎    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading timetable...</p>';
+‎
+‎    try {
+‎        const snapshot = await db.collection('timetable').get();
+‎
+‎        let html = '<h3>📅 Class Timetable</h3>';
+‎
+‎        if (snapshot.empty) {
+‎            html += '<p style="color:#888;">No timetable entries yet.</p>';
+‎        } else {
+‎            html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">';
+‎            snapshot.forEach(doc => {
+‎                const tt = doc.data();
+‎                html += `
+‎                    <div style="background:white;padding:15px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
+‎                        <strong>${tt.day}</strong>
+‎                        <p>${tt.subject}</p>
+‎                        <small>${tt.time} | ${tt.teacher}</small>
+‎                    </div>
+‎                `;
+‎            });
+‎            html += '</div>';
+‎        }
+‎
+‎        content.innerHTML = html;
+‎    } catch (error) {
+‎        content.innerHTML = '<p style="color:red;">Error loading timetable.</p>';
+‎    }
+‎}
+‎
+‎async function loadClasswork() {
+‎    const content = document.getElementById('dashboardContent');
+‎    if (!content) return;
+‎    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading classwork...</p>';
+‎
+‎    try {
+‎        const snapshot = await db.collection('classwork').orderBy('createdAt', 'desc').get();
+‎
+‎        let html = '<h3>📝 Classwork</h3>';
+‎
+‎        if (snapshot.empty) {
+‎            html += '<p style="color:#888;">No classwork posted yet.</p>';
+‎        } else {
+‎            snapshot.forEach(doc => {
+‎                const cw = doc.data();
+‎                html += `
+‎                    <div style="background:white;padding:15px;margin-bottom:10px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
+‎                        <strong>${cw.title}</strong>
+‎                        <small style="color:#888;"> (${cw.subject || 'General'})</small>
+‎                        <p style="color:#555;">${cw.description || ''}</p>
+‎                        <small style="color:#999;">Posted by ${cw.teacherName || 'Teacher'}</small>
+‎                    </div>
+‎                `;
+‎            });
+‎        }
+‎
+‎        content.innerHTML = html;
+‎    } catch (error) {
+‎        content.innerHTML = '<p style="color:red;">Error loading classwork.</p>';
+‎    }
+‎}
+‎
+‎async function loadStudentProgress() {
+‎    const content = document.getElementById('dashboardContent');
+‎    if (!content) return;
+‎    content.innerHTML = '<h3>📊 Progress</h3><p style="color:#888;">Progress tracking loads here.</p>';
+‎}
+‎
+‎async function loadProfile() {
+‎    const content = document.getElementById('dashboardContent');
+‎    if (!content) return;
+‎    content.innerHTML = `
+‎        <div style="background:white;padding:20px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+‎            <h3>👤 My Profile</h3>
+‎            <p><strong>Name:</strong> ${userData?.fullName || 'N/A'}</p>
+‎            <p><strong>Email:</strong> ${userData?.email || 'N/A'}</p>
+‎            <p><strong>Role:</strong> ${userData?.role || 'N/A'}</p>
+‎        </div>
+‎    `;
+‎}
+‎
+‎async function postAnnouncement() {
+‎    const title = document.getElementById('newsTitle')?.value?.trim();
+‎    const content = document.getElementById('newsContent')?.value?.trim();
+‎    const type = document.getElementById('newsType')?.value || 'announcement';
+‎
+‎    if (!title || !content) {
+‎        showToast('Please fill in both title and content', 'error');
+‎        return;
+‎    }
+‎
+‎    try {
+‎        await db.collection('announcements').add({
+‎            title: title,
+‎            content: content,
+‎            type: type,
+‎            author: userData?.fullName || 'Admin',
+‎            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+‎        });
+‎
+‎        showToast('Announcement posted!', 'success');
+‎        loadAnnouncements();
+‎    } catch (error) {
+‎        showToast('Error: ' + error.message, 'error');
+‎    }
+‎}
+‎function showDashboard() {
+‎    // Hide all pages
+‎    document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
+‎
+‎    // Show dashboard
+‎    const dashboard = document.getElementById('dashboardLayout');
+‎    if (dashboard) {
+‎        dashboard.style.display = 'grid';
+‎        dashboard.classList.add('active');
+‎    }
+‎
+‎    // Set welcome message
+‎    const dashUserName = document.getElementById('dashUserName');
+‎    if (dashUserName && userData) {
+‎        dashUserName.textContent = userData.fullName || 'User';
+‎    }
+‎
+‎    // Show/hide sections based on role
+‎    const teacherSection = document.getElementById('teacherDashboard');
+‎    const studentSection = document.getElementById('studentDashboard');
+‎
+‎    if (teacherSection) teacherSection.style.display = 'none';
+‎    if (studentSection) studentSection.style.display = 'none';
+‎
+‎    // Load default view
+‎    loadAnnouncements();
+‎
+‎    window.scrollTo({ top: 0, behavior: 'smooth' });
+‎}
+‎
+‎    </script>
+‎
+‎
+‎</body>
+‎</html>
+‎
