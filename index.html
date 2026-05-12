@@ -971,12 +971,13 @@
 </footer>
 
         <!-- CURRENT SIDEBAR MENU -->
-<li><a onclick="loadDashboardSection('announcements')" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;">📢 Announcements</a></li>
-<li><a onclick="loadDashboardSection('timetable')" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;">📅 Timetable</a></li>
-<li><a onclick="loadDashboardSection('classwork')" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;">📝 Classwork</a></li>
-<li><a onclick="loadDashboardSection('progress')" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;">📊 Progress</a></li>
-<li><a onclick="loadDashboardSection('profile')" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;">👤 Profile</a></li>
-
+<ul class="sidebar-menu" style="list-style:none;">
+    <li><a onclick="loadAnnouncements()" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;">📢 Announcements</a></li>
+    <li><a onclick="loadTimetable()" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;">📅 Timetable</a></li>
+    <li><a onclick="loadClasswork()" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;">📝 Classwork</a></li>
+    <li><a onclick="loadStudentProgress()" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;">📊 Progress</a></li>
+    <li><a onclick="loadProfile()" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;">👤 Profile</a></li>
+</ul>
 <script>
 // ============ FIREBASE CONFIGURATION ============
 const firebaseConfig = {
@@ -1584,6 +1585,170 @@ if (storedUser && auth.currentUser) {
 console.log('✅ Mbogo College School Ready!');
 console.log('📧 mbogocollegeschool@yahoo.com');
 console.log('📞 +256 703 204 367');
+// ============ DASHBOARD CONTENT LOADERS ============
+
+async function loadAnnouncements() {
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
+    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading announcements...</p>';
+    
+    // Check if user is teacher
+    if (userData && userData.role === 'teacher') {
+        content.innerHTML = `
+            <div style="background:white;padding:20px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);margin-bottom:20px;">
+                <h3>📢 Post New Announcement</h3>
+                <input type="text" id="newsTitle" class="form-control" placeholder="Title" style="margin-bottom:10px;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;">
+                <textarea id="newsContent" class="form-control" placeholder="Content" style="margin-bottom:10px;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;" rows="3"></textarea>
+                <select id="newsType" class="form-control" style="margin-bottom:10px;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;">
+                    <option value="announcement">General Announcement</option>
+                    <option value="urgent">Urgent Notice</option>
+                    <option value="event">School Event</option>
+                </select>
+                <button class="btn btn-primary" onclick="postAnnouncement()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;cursor:pointer;">Post Announcement</button>
+            </div>
+            <div id="newsList"></div>
+        `;
+    } else {
+        content.innerHTML = '<div id="newsList"></div>';
+    }
+    
+    // Load from Firestore
+    try {
+        const snapshot = await db.collection('announcements').orderBy('createdAt', 'desc').limit(20).get();
+        const newsList = document.getElementById('newsList');
+        if (!newsList) return;
+        
+        if (snapshot.empty) {
+            newsList.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">No announcements yet.</p>';
+            return;
+        }
+        
+        let html = '';
+        snapshot.forEach(doc => {
+            const news = doc.data();
+            html += `
+                <div style="background:white;padding:15px;margin-bottom:10px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);border-left:4px solid #c8943e;">
+                    <strong>${news.title}</strong>
+                    <p style="color:#555;">${news.content}</p>
+                    <small style="color:#999;">Posted by ${news.author || 'Admin'}</small>
+                </div>
+            `;
+        });
+        newsList.innerHTML = html;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function loadTimetable() {
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
+    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading timetable...</p>';
+    
+    try {
+        const snapshot = await db.collection('timetable').get();
+        
+        let html = '<h3>📅 Class Timetable</h3>';
+        
+        if (snapshot.empty) {
+            html += '<p style="color:#888;">No timetable entries yet.</p>';
+        } else {
+            html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">';
+            snapshot.forEach(doc => {
+                const tt = doc.data();
+                html += `
+                    <div style="background:white;padding:15px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
+                        <strong>${tt.day}</strong>
+                        <p>${tt.subject}</p>
+                        <small>${tt.time} | ${tt.teacher}</small>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        content.innerHTML = html;
+    } catch (error) {
+        content.innerHTML = '<p style="color:red;">Error loading timetable.</p>';
+    }
+}
+
+async function loadClasswork() {
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
+    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading classwork...</p>';
+    
+    try {
+        const snapshot = await db.collection('classwork').orderBy('createdAt', 'desc').get();
+        
+        let html = '<h3>📝 Classwork</h3>';
+        
+        if (snapshot.empty) {
+            html += '<p style="color:#888;">No classwork posted yet.</p>';
+        } else {
+            snapshot.forEach(doc => {
+                const cw = doc.data();
+                html += `
+                    <div style="background:white;padding:15px;margin-bottom:10px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
+                        <strong>${cw.title}</strong>
+                        <small style="color:#888;"> (${cw.subject || 'General'})</small>
+                        <p style="color:#555;">${cw.description || ''}</p>
+                        <small style="color:#999;">Posted by ${cw.teacherName || 'Teacher'}</small>
+                    </div>
+                `;
+            });
+        }
+        
+        content.innerHTML = html;
+    } catch (error) {
+        content.innerHTML = '<p style="color:red;">Error loading classwork.</p>';
+    }
+}
+
+async function loadStudentProgress() {
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
+    content.innerHTML = '<h3>📊 Progress</h3><p style="color:#888;">Progress tracking loads here.</p>';
+}
+
+async function loadProfile() {
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
+    content.innerHTML = `
+        <div style="background:white;padding:20px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <h3>👤 My Profile</h3>
+            <p><strong>Name:</strong> ${userData?.fullName || 'N/A'}</p>
+            <p><strong>Email:</strong> ${userData?.email || 'N/A'}</p>
+            <p><strong>Role:</strong> ${userData?.role || 'N/A'}</p>
+        </div>
+    `;
+}
+
+async function postAnnouncement() {
+    const title = document.getElementById('newsTitle')?.value?.trim();
+    const content = document.getElementById('newsContent')?.value?.trim();
+    const type = document.getElementById('newsType')?.value || 'announcement';
+    
+    if (!title || !content) {
+        showToast('Please fill in both title and content', 'error');
+        return;
+    }
+    
+    try {
+        await db.collection('announcements').add({
+            title: title,
+            content: content,
+            type: type,
+            author: userData?.fullName || 'Admin',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        showToast('Announcement posted!', 'success');
+        loadAnnouncements();
+    } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+    }
+}
 
     </script>
         
