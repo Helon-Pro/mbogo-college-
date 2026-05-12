@@ -1245,121 +1245,68 @@ function updateUIBasedOnAuth() {
 }
 
 // ============ DASHBOARD ============
-function showDashboard() {
-    document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
-    const dashboard = document.getElementById('dashboardLayout');
-    if (dashboard) dashboard.classList.add('active');
-    
-    // Set user info
-    const welcomeUser = document.getElementById('welcomeUser');
-    if (welcomeUser && userData) welcomeUser.textContent = 'Welcome, ' + userData.fullName;
-    
-    // Show/hide based on role
-    const teacherSection = document.getElementById('teacherSection');
-    const studentSection = document.getElementById('studentSection');
-    const parentSection = document.getElementById('parentSection');
-    
-    if (teacherSection) teacherSection.style.display = userData?.role === 'teacher' ? 'block' : 'none';
-    if (studentSection) studentSection.style.display = userData?.role === 'student' ? 'block' : 'none';
-    if (parentSection) parentSection.style.display = userData?.role === 'parent' ? 'block' : 'none';
-    
-    loadAnnouncements();
-    loadClasswork();
-    if (userData?.role === 'teacher') loadStudentProgress();
-    if (userData?.role === 'parent') loadChildProgress();
-    
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-function loadDashboardSection(section) {
-    const content = document.getElementById('dashboardContent');
-    if (!content) return;
-    
-    switch(section) {
-        case 'announcements':
-            loadAnnouncements();
-            break;
-        case 'timetable':
-            loadTimetable();
-            break;
-        case 'classwork':
-            loadClasswork();
-            break;
-        case 'progress':
-            loadStudentProgress();
-            break;
-        case 'profile':
-            loadProfile();
-            break;
-    }
-}
-//============= TIMETABLES ============
-async function loadTimetable() {
-    alert('Timetable clicked!'); // ADD THIS LINE
-    // ... rest of function
-}
+// ============ TIMETABLE ============
 async function loadTimetable() {
     const content = document.getElementById('dashboardContent');
     if (!content) return;
-    
-    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading timetable...</p>';
     
     let html = '<h3>📅 Class Timetable</h3>';
     
-    // Show form for teachers
-    if (userData && userData.role === 'teacher') {
-        html += `
-            <div style="background:#f9f9f9;padding:15px;margin:10px 0;border-radius:8px;">
-                <h4>Add Timetable Entry</h4>
-                <select id="ttDay" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-                    <option value="Monday">Monday</option>
-                    <option value="Tuesday">Tuesday</option>
-                    <option value="Wednesday">Wednesday</option>
-                    <option value="Thursday">Thursday</option>
-                    <option value="Friday">Friday</option>
-                </select>
-                <input type="text" id="ttTime" placeholder="Time (e.g., 8:00-9:00 AM)" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-                <input type="text" id="ttSubject" placeholder="Subject" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-                <input type="text" id="ttTeacher" placeholder="Teacher name" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-                <button onclick="addTimetable()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;">Add to Timetable</button>
-            </div>
-        `;
-    }
+    // Teacher form - always show for testing
+    html += `
+        <div style="background:#e8f4e8;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #2d8a4e;">
+            <h4 style="color:#2d8a4e;">➕ Add New Timetable Entry</h4>
+            <select id="ttDay" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+                <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+                <option>Thursday</option><option>Friday</option>
+            </select>
+            <input type="text" id="ttTime" placeholder="Time (e.g., 8:00-9:00 AM)" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+            <input type="text" id="ttSubject" placeholder="Subject (e.g., Mathematics)" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+            <input type="text" id="ttTeacher" placeholder="Teacher name" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+            <button onclick="addTimetable()" style="background:#2d8a4e;color:white;padding:12px 25px;border:none;border-radius:25px;font-size:16px;width:100%;">✅ Save to Timetable</button>
+        </div>
+    `;
     
+    html += '<div id="timetableList">Loading...</div>';
+    content.innerHTML = html;
+    
+    // Load existing entries
     try {
         const snapshot = await db.collection('timetable').get();
+        const list = document.getElementById('timetableList');
         
         if (snapshot.empty) {
-            html += '<p style="color:#888;text-align:center;">No timetable entries yet.</p>';
-        } else {
-            html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">';
-            snapshot.forEach(doc => {
-                const tt = doc.data();
-                html += `
-                    <div style="background:white;padding:15px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
-                        <strong style="color:#1a3a5c;">${tt.day}</strong>
-                        <p style="margin:5px 0;">${tt.subject}</p>
-                        <small style="color:#888;">⏰ ${tt.time}</small><br>
-                        <small style="color:#888;">👨‍🏫 ${tt.teacher}</small>
-                    </div>
-                `;
-            });
-            html += '</div>';
+            list.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">No timetable entries yet. Use the form above to add one.</p>';
+            return;
         }
         
-        content.innerHTML = html;
+        let items = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">';
+        snapshot.forEach(doc => {
+            const t = doc.data();
+            items += `
+                <div style="background:white;padding:12px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                    <strong style="color:#1a3a5c;">${t.day}</strong>
+                    <p style="margin:5px 0;">📖 ${t.subject}</p>
+                    <small>⏰ ${t.time}</small><br>
+                    <small>👨‍🏫 ${t.teacher}</small>
+                </div>
+            `;
+        });
+        items += '</div>';
+        list.innerHTML = items;
     } catch (error) {
-        content.innerHTML = '<p style="color:red;">Error loading timetable.</p>';
+        document.getElementById('timetableList').innerHTML = '<p style="color:red;">Error loading.</p>';
     }
 }
 
 function addTimetable() {
-    const day = document.getElementById('ttDay').value;
-    const time = document.getElementById('ttTime').value.trim();
-    const subject = document.getElementById('ttSubject').value.trim();
-    const teacher = document.getElementById('ttTeacher').value.trim();
+    const day = document.getElementById('ttDay')?.value;
+    const time = document.getElementById('ttTime')?.value?.trim();
+    const subject = document.getElementById('ttSubject')?.value?.trim();
+    const teacher = document.getElementById('ttTeacher')?.value?.trim();
     
-    if (!time || !subject || !teacher) {
-        showToast('Please fill all fields', 'error');
+    if (!time || !subject) {
+        alert('Please fill time and subject');
         return;
     }
     
@@ -1367,17 +1314,90 @@ function addTimetable() {
         day: day,
         time: time,
         subject: subject,
-        teacher: teacher,
-        createdBy: currentUser?.uid,
+        teacher: teacher || 'Staff',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     })
     .then(() => {
-        showToast('Timetable updated!', 'success');
+        showToast('Added!', 'success');
         loadTimetable();
     })
-    .catch(err => {
-        showToast('Error: ' + err.message, 'error');
-    });
+    .catch(err => alert('Error: ' + err.message));
+}
+
+// ============ CLASSWORK ============
+async function loadClasswork() {
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
+    
+    let html = '<h3>📝 Classwork</h3>';
+    
+    // Teacher form
+    html += `
+        <div style="background:#fff3e0;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #c8943e;">
+            <h4 style="color:#c8943e;">➕ Post New Classwork</h4>
+            <input type="text" id="cwTitle" placeholder="Title *" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+            <input type="text" id="cwSubject" placeholder="Subject" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+            <textarea id="cwDescription" placeholder="Description" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea>
+            <input type="date" id="cwDueDate" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+            <button onclick="addClasswork()" style="background:#c8943e;color:white;padding:12px 25px;border:none;border-radius:25px;font-size:16px;width:100%;">✅ Post Classwork</button>
+        </div>
+    `;
+    
+    html += '<div id="classworkList">Loading...</div>';
+    content.innerHTML = html;
+    
+    try {
+        const snapshot = await db.collection('classwork').orderBy('createdAt', 'desc').get();
+        const list = document.getElementById('classworkList');
+        
+        if (snapshot.empty) {
+            list.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">No classwork posted yet. Use the form above.</p>';
+            return;
+        }
+        
+        let items = '';
+        snapshot.forEach(doc => {
+            const c = doc.data();
+            items += `
+                <div style="background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-left:4px solid #c8943e;">
+                    <strong>${c.title}</strong>
+                    <small style="color:#888;"> (${c.subject || 'General'})</small>
+                    <p>${c.description || ''}</p>
+                    ${c.dueDate ? '<p style="color:#c0392b;">📅 Due: ' + c.dueDate + '</p>' : ''}
+                    <small>Posted by ${c.teacherName || 'Teacher'}</small>
+                </div>
+            `;
+        });
+        list.innerHTML = items;
+    } catch (error) {
+        document.getElementById('classworkList').innerHTML = '<p style="color:red;">Error loading.</p>';
+    }
+}
+
+function addClasswork() {
+    const title = document.getElementById('cwTitle')?.value?.trim();
+    const subject = document.getElementById('cwSubject')?.value?.trim();
+    const description = document.getElementById('cwDescription')?.value?.trim();
+    const dueDate = document.getElementById('cwDueDate')?.value;
+    
+    if (!title) {
+        alert('Please enter a title');
+        return;
+    }
+    
+    db.collection('classwork').add({
+        title: title,
+        subject: subject,
+        description: description,
+        dueDate: dueDate,
+        teacherName: userData?.fullName || 'Teacher',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+        showToast('Posted!', 'success');
+        loadClasswork();
+    })
+    .catch(err => alert('Error: ' + err.message));
 }
 // ============ ANNOUNCEMENTS ============
 function loadAnnouncements() {
