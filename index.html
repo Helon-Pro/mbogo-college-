@@ -701,6 +701,24 @@
                 grid-template-columns: repeat(2, 1fr);
             }
         }
+.dashboard-layout {
+    display: none;
+}
+
+.dashboard-layout.active {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+@media (max-width: 768px) {
+    .dashboard-layout.active {
+        grid-template-columns: 1fr;
+    }
+}
     </style>
 </head>
 <body>
@@ -1828,6 +1846,12 @@ async function loadStudentProgress() {
     if (!content) return;
     content.innerHTML = '<h3>📊 Progress</h3><p style="color:#888;">Progress tracking loads here.</p>';
 }
+function loadAnnouncements() {
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
+    content.innerHTML = '<p>Loading announcements...</p>';
+    // ... your announcements code
+}
 
 async function loadProfile() {
     const content = document.getElementById('dashboardContent');
@@ -2030,6 +2054,35 @@ async function postAnnouncement() {
     } catch (error) {
         showToast('Error: ' + error.message, 'error');
     }
+}
+function showDashboard() {
+    // Hide all pages
+    document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
+    
+    // Show dashboard
+    const dashboard = document.getElementById('dashboardLayout');
+    if (dashboard) {
+        dashboard.style.display = 'grid';
+        dashboard.classList.add('active');
+    }
+    
+    // Set welcome message
+    const dashUserName = document.getElementById('dashUserName');
+    if (dashUserName && userData) {
+        dashUserName.textContent = userData.fullName || 'User';
+    }
+    
+    // Show/hide sections based on role
+    const teacherSection = document.getElementById('teacherDashboard');
+    const studentSection = document.getElementById('studentDashboard');
+    
+    if (teacherSection) teacherSection.style.display = 'none';
+    if (studentSection) studentSection.style.display = 'none';
+    
+    // Load default view
+    loadAnnouncements();
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
     </script>
