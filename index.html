@@ -1287,79 +1287,69 @@ function loadDashboardSection(section) {
 }
 
 // ============ ANNOUNCEMENTS ============
-async function loadAnnouncements() {
+function loadAnnouncements() {
     const content = document.getElementById('dashboardContent');
     if (!content) return;
     
-    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading announcements...</p>';
+    content.innerHTML = `
+        <h3>📢 Announcements</h3>
+        <div style="background:#f9f9f9;padding:15px;margin:10px 0;border-radius:8px;">
+            <input type="text" id="newsTitle" placeholder="Title" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+            <textarea id="newsContent" placeholder="Content" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;" rows="3"></textarea>
+            <button onclick="postAnnouncementSimple()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;">Post Announcement</button>
+        </div>
+        <div id="newsList"></div>
+    `;
     
-    try {
-        const snapshot = await db.collection('announcements')
-            .orderBy('createdAt', 'desc')
-            .limit(20)
-            .get();
-        
-        let html = '<h3>📢 Announcements</h3>';
-        
-        // Add post form for teachers
-        if (userData && userData.role === 'teacher') {
-            html += `
-                <div style="background:#f9f9f9;padding:15px;margin:10px 0;border-radius:8px;">
-                    <input type="text" id="newsTitle" placeholder="Title" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-                    <textarea id="newsContent" placeholder="Content" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;" rows="3"></textarea>
-                    <button onclick="postAnnouncement()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;">Post</button>
-                </div>
-            `;
-        }
-        
-        if (snapshot.empty) {
-            html += '<p style="color:#888;text-align:center;">No announcements yet.</p>';
-        } else {
+    // Load existing announcements
+    db.collection('announcements').orderBy('createdAt', 'desc').get()
+        .then(snapshot => {
+            const list = document.getElementById('newsList');
+            if (!list) return;
+            
+            if (snapshot.empty) {
+                list.innerHTML = '<p style="color:#888;">No announcements yet.</p>';
+                return;
+            }
+            
+            let html = '';
             snapshot.forEach(doc => {
-                const news = doc.data();
-                html += `
-                    <div style="background:white;padding:15px;margin:10px 0;border-radius:8px;border-left:4px solid #c8943e;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-                        <strong>${news.title || 'Untitled'}</strong>
-                        <p>${news.content || ''}</p>
-                        <small style="color:#999;">By ${news.author || 'Admin'}</small>
-                    </div>
-                `;
+                const n = doc.data();
+                html += `<div style="background:white;padding:12px;margin:8px 0;border-radius:8px;border-left:4px solid #c8943e;">
+                    <strong>${n.title}</strong><p>${n.content}</p>
+                    <small>By ${n.author || 'Admin'}</small></div>`;
             });
-        }
-        
-        content.innerHTML = html;
-        
-    } catch (error) {
-        console.error('Announcements error:', error);
-        content.innerHTML = '<p style="color:red;">Error loading announcements. Check console.</p>';
-    }
+            list.innerHTML = html;
+        })
+        .catch(err => {
+            console.error(err);
+            document.getElementById('newsList').innerHTML = '<p style="color:red;">Error: ' + err.message + '</p>';
+        });
 }
 
-async function postAnnouncement() {
-    const title = document.getElementById('newsTitle')?.value?.trim();
-    const content = document.getElementById('newsContent')?.value?.trim();
+function postAnnouncementSimple() {
+    const title = document.getElementById('newsTitle').value.trim();
+    const content = document.getElementById('newsContent').value.trim();
     
     if (!title || !content) {
-        showToast('Please fill title and content', 'error');
+        alert('Please fill both fields');
         return;
     }
     
-    try {
-        await db.collection('announcements').add({
-            title: title,
-            content: content,
-            author: userData?.fullName || 'Teacher',
-            authorId: currentUser?.uid,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
+    db.collection('announcements').add({
+        title: title,
+        content: content,
+        author: userData?.fullName || 'Teacher',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
         showToast('Posted!', 'success');
         loadAnnouncements();
-    } catch (error) {
-        showToast('Error: ' + error.message, 'error');
-    }
+    })
+    .catch(err => {
+        showToast('Error: ' + err.message, 'error');
+    });
 }
-
 // ============ CLASSWORK ============
 async function postClasswork() {
     const title = document.getElementById('cwTitle')?.value?.trim();
