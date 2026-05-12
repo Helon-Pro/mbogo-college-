@@ -869,7 +869,11 @@
                 <div class="form-group">
                     <label>Confirm Password *</label>
                     <input type="password" class="form-control" id="signupConfirmPassword" required minlength="8" placeholder="Confirm your password">
-                </div>
+</div>
+               <div class="form-group" id="teacherCodeGroup" style="display:none;">
+    <label>Teacher Approval Code *</label>
+    <input type="password" class="form-control" id="teacherCode" placeholder="Enter the teacher registration code">
+</div>
                 <div class="form-group">
                     <label>Role *</label>
                     <select class="form-control" id="signupRole" required>
@@ -1146,6 +1150,28 @@ async function signup(event) {
         if (error.code === 'auth/invalid-email') message = 'Please enter a valid email address.';
         if (error.code === 'auth/weak-password') message = 'Password is too weak. Use at least 8 characters with numbers and letters.';
         showToast(message, 'error');
+    }
+}
+// Show/hide teacher code field
+document.getElementById('signupRole').addEventListener('change', function() {
+    const teacherCodeGroup = document.getElementById('teacherCodeGroup');
+    if (this.value === 'teacher') {
+        teacherCodeGroup.style.display = 'block';
+        document.getElementById('teacherCode').required = true;
+    } else {
+        teacherCodeGroup.style.display = 'none';
+        document.getElementById('teacherCode').required = false;
+    }
+});
+
+// In your signup function, add this check:
+const TEACHER_SECRET_CODE = "MbogoTeachers2026"; // Change this!
+
+if (role === 'teacher') {
+    const enteredCode = document.getElementById('teacherCode')?.value;
+    if (enteredCode !== TEACHER_SECRET_CODE) {
+        showToast('Invalid teacher registration code. Contact the school administration.', 'error');
+        return;
     }
 }
 async function login(event) {
