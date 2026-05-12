@@ -1044,7 +1044,8 @@ function showToast(message, type = 'success') {
 // ============ NAVIGATION ============
 function showPage(page) {
     document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
-    document.getElementById('dashboardLayout')?.classList.remove('active');
+    const dashboard = document.getElementById('dashboardLayout');
+    if (dashboard) dashboard.classList.remove('active');
     const pageEl = document.getElementById('page-' + page);
     if (pageEl) pageEl.style.display = 'block';
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1062,7 +1063,7 @@ function toggleMenu() {
     document.getElementById('navLinks')?.classList.toggle('active');
 }
 
-// Close modals on outside click
+// Close modals when clicking outside
 window.onclick = function(event) {
     if (event.target.classList.contains('modal-overlay')) {
         event.target.classList.remove('active');
@@ -1177,44 +1178,36 @@ document.getElementById('signupRole')?.addEventListener('change', function() {
 
 async function login(event) {
     event.preventDefault();
-    
+
     const email = document.getElementById('loginEmail')?.value?.trim();
     const password = document.getElementById('loginPassword')?.value;
-    
+
     if (!email || !password) {
         showToast('Please enter email and password', 'error');
         return;
     }
-    
+
     try {
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
-        
-        
-        
+
         // Get user data from Firestore
         const userDoc = await db.collection('users').doc(user.uid).get();
-        
+
         if (userDoc.exists) {
             userData = userDoc.data();
-            // Update email verified status
-            if (!userData.emailVerified) {
-                await db.collection('users').doc(user.uid).update({
-                    emailVerified: true
-                });
-            }
         } else {
             userData = { fullName: user.email, email: user.email, role: 'student' };
         }
-        
+
         currentUser = user;
         localStorage.setItem('mbogo_user', JSON.stringify(userData));
-        
+
         showToast('Welcome back, ' + (userData.fullName?.split(' ')[0] || 'User') + '!', 'success');
         closeModal('loginModal');
         updateUIBasedOnAuth();
         showDashboard();
-        
+
     } catch (error) {
         console.error('Login error:', error);
         let message = error.message;
@@ -1225,7 +1218,6 @@ async function login(event) {
         showToast(message, 'error');
     }
 }
-
 async function logout() {
     try {
         await auth.signOut();
@@ -1247,14 +1239,14 @@ function updateUIBasedOnAuth() {
     const navLogout = document.getElementById('navLogout');
     const navDashboard = document.getElementById('navDashboard');
     const navUserName = document.getElementById('navUserName');
-    
+
     if (currentUser && userData) {
         if (navLogin) navLogin.style.display = 'none';
         if (navSignup) navSignup.style.display = 'none';
         if (navUser) navUser.style.display = 'block';
         if (navLogout) navLogout.style.display = 'block';
         if (navDashboard) navDashboard.style.display = 'block';
-        if (navUserName) navUserName.textContent = '👋 ' + userData.fullName?.split(' ')[0] || 'User';
+        if (navUserName) navUserName.textContent = '👋 ' + userData.fullName.split(' ')[0];
     } else {
         if (navLogin) navLogin.style.display = 'block';
         if (navSignup) navSignup.style.display = 'block';
@@ -1263,15 +1255,29 @@ function updateUIBasedOnAuth() {
         if (navDashboard) navDashboard.style.display = 'none';
     }
 }
-
 // ============ DASHBOARD ============
+function showDashboard() {
+    document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
+    const dashboard = document.getElementById('dashboardLayout');
+    if (dashboard) {
+        dashboard.style.display = 'grid';
+        dashboard.classList.add('active');
+    }
+    const dashUserName = document.getElementById('dashUserName');
+    if (dashUserName && userData) {
+        dashUserName.textContent = userData.fullName || 'User';
+    }
+    loadAnnouncements();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 // ============ TIMETABLE ============
 function loadTimetable() {
     const content = document.getElementById('dashboardContent');
     if (!content) return;
-    
+
     let html = '<h3>📅 Class Timetable</h3>';
-    
+
     // Teacher form
     html += `
         <div style="background:#e8f4e8;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #2d8a4e;">
@@ -1280,33 +1286,31 @@ function loadTimetable() {
                 <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
                 <option>Thursday</option><option>Friday</option>
             </select>
-            <input type="text" id="ttTime" placeholder="Time (e.g., 8:00-9:00 AM)" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+            <input type="text" id="ttTime" placeholder="Time (e.g.,7:20-8:40 AM)" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
             <input type="text" id="ttSubject" placeholder="Subject" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
             <input type="text" id="ttTeacher" placeholder="Teacher name" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-            <button onclick="addTimetable()" style="background:#2d8a4e;color:white;padding:10px 20px;border:none;border-radius:25px;">Save</button>
+            <button onclick="addTimetable()" style="background:#2d8a4e;color:white;padding:10px 20px;border:none;border-radius:25px;">Save Entry</button>
         </div>
     `;
-    
+
     html += '<div id="ttList">Loading...</div>';
     content.innerHTML = html;
-    
-    // Load data using then()
+
     db.collection('timetable').get()
         .then(snapshot => {
             const list = document.getElementById('ttList');
             if (!list) return;
-            
+
             console.log('Timetable docs found:', snapshot.size);
-            
+
             if (snapshot.empty) {
                 list.innerHTML = '<p style="color:#888;">No timetable entries yet.</p>';
                 return;
             }
-            
+
             let items = '';
             snapshot.forEach(doc => {
                 const t = doc.data();
-                console.log('Document data:', t);
                 items += `
                     <div style="background:white;padding:12px;margin:5px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
                         <strong>${t.day || 'N/A'}</strong>
@@ -1322,9 +1326,32 @@ function loadTimetable() {
             console.error('Error:', err);
             document.getElementById('ttList').innerHTML = '<p style="color:red;">Error: ' + err.message + '</p>';
         });
-}   html += '<div id="timetableList">Loading...</div>';
-    content.innerHTML = html;
-    
+}
+
+function addTimetable() {
+    const day = document.getElementById('ttDay')?.value;
+    const time = document.getElementById('ttTime')?.value?.trim();
+    const subject = document.getElementById('ttSubject')?.value?.trim();
+    const teacher = document.getElementById('ttTeacher')?.value?.trim();
+
+    if (!time || !subject) {
+        alert('Please fill time and subject');
+        return;
+    }
+
+    db.collection('timetable').add({
+        day: day,
+        time: time,
+        subject: subject,
+        teacher: teacher || 'Staff',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+        showToast('Added!', 'success');
+        loadTimetable();
+    })
+    .catch(err => alert('Error: ' + err.message));
+}
     // Load existing entries
     try {
         const snapshot = await db.collection('timetable').get();
@@ -1382,14 +1409,14 @@ function addTimetable() {
 snapshot.forEach(doc => {
     const t = doc.data();
     items += `
-        <div style="background:white;padding:12px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);position:relative;">
-            <strong style="color:#1a3a5c;">${t.day}</strong>
-            <p style="margin:5px 0;">📖 ${t.subject}</p>
-            <small>⏰ ${t.time}</small><br>
-            <small>👨‍🏫 ${t.teacher}</small>
+        <div style="background:white;padding:12px;margin:5px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);position:relative;">
             ${userData && userData.role === 'teacher' ? 
                 `<button onclick="deleteTimetable('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;font-size:12px;">✕</button>` 
                 : ''}
+            <strong style="color:#1a3a5c;">${t.day || 'N/A'}</strong>
+            <p style="margin:5px 0;">📖 ${t.subject || 'N/A'}</p>
+            <small>⏰ ${t.time || 'N/A'}</small><br>
+            <small>👨‍🏫 ${t.teacher || 'N/A'}</small>
         </div>
     `;
 });
@@ -1397,10 +1424,8 @@ snapshot.forEach(doc => {
 function loadClasswork() {
     const content = document.getElementById('dashboardContent');
     if (!content) return;
-    
+
     let html = '<h3>📝 Classwork</h3>';
-    
-    // Teacher form
     html += `
         <div style="background:#fff3e0;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #c8943e;">
             <h4>➕ Post New Classwork</h4>
@@ -1411,29 +1436,23 @@ function loadClasswork() {
             <button onclick="addClasswork()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;">Post Classwork</button>
         </div>
     `;
-    
     html += '<div id="cwList">Loading...</div>';
     content.innerHTML = html;
-    
-    // Load data using then()
+
     db.collection('classwork').orderBy('createdAt', 'desc').get()
         .then(snapshot => {
             const list = document.getElementById('cwList');
             if (!list) return;
-            
-            console.log('Classwork docs found:', snapshot.size);
-            
             if (snapshot.empty) {
                 list.innerHTML = '<p style="color:#888;">No classwork posted yet.</p>';
                 return;
             }
-            
             let items = '';
             snapshot.forEach(doc => {
                 const c = doc.data();
-                console.log('Classwork data:', c);
                 items += `
-                    <div style="background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-left:4px solid #c8943e;">
+                    <div style="background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-left:4px solid #c8943e;position:relative;">
+                        ${userData && userData.role === 'teacher' ? `<button onclick="deleteClasswork('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>` : ''}
                         <strong>${c.title || 'N/A'}</strong>
                         <small style="color:#888;"> (${c.subject || 'General'})</small>
                         <p>${c.description || ''}</p>
@@ -1445,7 +1464,6 @@ function loadClasswork() {
             list.innerHTML = items;
         })
         .catch(err => {
-            console.error('Error:', err);
             document.getElementById('cwList').innerHTML = '<p style="color:red;">Error: ' + err.message + '</p>';
         });
 }
@@ -1455,94 +1473,41 @@ function addClasswork() {
     const subject = document.getElementById('cwSubject')?.value?.trim();
     const description = document.getElementById('cwDescription')?.value?.trim();
     const dueDate = document.getElementById('cwDueDate')?.value;
-    
-    if (!title) {
-        alert('Please enter a title');
-        return;
-    }
-    
+    if (!title) { alert('Please enter a title'); return; }
     db.collection('classwork').add({
-        title: title,
-        subject: subject,
-        description: description,
-        dueDate: dueDate,
+        title, subject, description, dueDate,
         teacherName: userData?.fullName || 'Teacher',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    })
-    .then(() => {
-        showToast('Posted!', 'success');
-        loadClasswork();
-    })
-    .catch(err => alert('Error: ' + err.message));
-}      let items = '';
-        snapshot.forEach(doc => {
-            const c = doc.data();
-            items += `
-                <div style="background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-left:4px solid #c8943e;">
-                    <strong>${c.title}</strong>
-                    <small style="color:#888;"> (${c.subject || 'General'})</small>
-                    <p>${c.description || ''}</p>
-                    ${c.dueDate ? '<p style="color:#c0392b;">📅 Due: ' + c.dueDate + '</p>' : ''}
-                    <small>Posted by ${c.teacherName || 'Teacher'}</small>
-                </div>
-            `;
-        });
-        list.innerHTML = items;
-    } catch (error) {
-        document.getElementById('classworkList').innerHTML = '<p style="color:red;">Error loading.</p>';
-    }
+    }).then(() => { showToast('Posted!', 'success'); loadClasswork(); })
+      .catch(err => alert('Error: ' + err.message));
 }
 
-function addClasswork() {
-    const title = document.getElementById('cwTitle')?.value?.trim();
-    const subject = document.getElementById('cwSubject')?.value?.trim();
-    const description = document.getElementById('cwDescription')?.value?.trim();
-    const dueDate = document.getElementById('cwDueDate')?.value;
-    
-    if (!title) {
-        alert('Please enter a title');
-        return;
-    }
-    
-    db.collection('classwork').add({
-        title: title,
-        subject: subject,
-        description: description,
-        dueDate: dueDate,
-        teacherName: userData?.fullName || 'Teacher',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    })
-    .then(() => {
-        showToast('Posted!', 'success');
-        loadClasswork();
-    })
-    .catch(err => alert('Error: ' + err.message));
+function deleteClasswork(id) {
+    if (!confirm('Delete?')) return;
+    db.collection('classwork').doc(id).delete()
+        .then(() => { showToast('Deleted!', 'success'); loadClasswork(); })
+        .catch(err => showToast('Error: ' + err.message, 'error'));
 }
+
 // ============ ANNOUNCEMENTS ============
 function loadAnnouncements() {
     const content = document.getElementById('dashboardContent');
-    
-    // Add this debug line:
-    alert('Content div found: ' + (content ? 'YES' : 'NO'));
-    
-    if (!content) return;
-    // ... rest of function
-}
-function loadAnnouncements() {
-    const content = document.getElementById('dashboardContent');
     if (!content) return;
     
-    content.innerHTML = `
-        <h3>📢 Announcements</h3>
-        <div style="background:#f9f9f9;padding:15px;margin:10px 0;border-radius:8px;">
-            <input type="text" id="newsTitle" placeholder="Title" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-            <textarea id="newsContent" placeholder="Content" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;" rows="3"></textarea>
-            <button onclick="postAnnouncementSimple()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;">Post Announcement</button>
+    let html = '<h3>📢 Announcements</h3>';
+    
+    html += `
+        <div style="background:#e8f0ff;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #2980b9;">
+            <h4>➕ Post Announcement</h4>
+            <input type="text" id="newsTitle" placeholder="Title *" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+            <textarea id="newsContent" placeholder="Content" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea>
+            <button onclick="postAnnouncement()" style="background:#2980b9;color:white;padding:10px 20px;border:none;border-radius:25px;">Post Announcement</button>
         </div>
-        <div id="newsList"></div>
     `;
     
-    // Load existing announcements
+    html += '<div id="newsList">Loading...</div>';
+    content.innerHTML = html;
+    
     db.collection('announcements').orderBy('createdAt', 'desc').get()
         .then(snapshot => {
             const list = document.getElementById('newsList');
@@ -1553,24 +1518,28 @@ function loadAnnouncements() {
                 return;
             }
             
-            let html = '';
+            let items = '';
             snapshot.forEach(doc => {
                 const n = doc.data();
-                html += `<div style="background:white;padding:12px;margin:8px 0;border-radius:8px;border-left:4px solid #c8943e;">
-                    <strong>${n.title}</strong><p>${n.content}</p>
-                    <small>By ${n.author || 'Admin'}</small></div>`;
+                items += `
+                    <div style="background:white;padding:12px;margin:8px 0;border-radius:8px;border-left:4px solid #2980b9;position:relative;">
+                        ${userData && userData.role === 'teacher' ? `<button onclick="deleteAnnouncement('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>` : ''}
+                        <strong>${n.title || 'N/A'}</strong>
+                        <p>${n.content || ''}</p>
+                        <small>By ${n.author || 'Admin'}</small>
+                    </div>
+                `;
             });
-            list.innerHTML = html;
+            list.innerHTML = items;
         })
         .catch(err => {
-            console.error(err);
             document.getElementById('newsList').innerHTML = '<p style="color:red;">Error: ' + err.message + '</p>';
         });
 }
 
-function postAnnouncementSimple() {
-    const title = document.getElementById('newsTitle').value.trim();
-    const content = document.getElementById('newsContent').value.trim();
+function postAnnouncement() {
+    const title = document.getElementById('newsTitle')?.value?.trim();
+    const content = document.getElementById('newsContent')?.value?.trim();
     
     if (!title || !content) {
         alert('Please fill both fields');
@@ -1580,206 +1549,166 @@ function postAnnouncementSimple() {
     db.collection('announcements').add({
         title: title,
         content: content,
-        author: userData?.fullName || 'Teacher',
+        author: userData?.fullName || 'Admin',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     })
     .then(() => {
         showToast('Posted!', 'success');
         loadAnnouncements();
     })
-    .catch(err => {
-        showToast('Error: ' + err.message, 'error');
-    });
+    .catch(err => showToast('Error: ' + err.message, 'error'));
 }
-// ============ CLASSWORK ============
-function loadClasswork() {
-    alert('Classwork clicked!'); // ADD THIS LINE
-    // ... rest of function
+
+function deleteAnnouncement(id) {
+    if (!confirm('Delete this announcement?')) return;
+    db.collection('announcements').doc(id).delete()
+        .then(() => {
+            showToast('Deleted!', 'success');
+            loadAnnouncements();
+        })
+        .catch(err => showToast('Error: ' + err.message, 'error'));
 }
-async function loadClasswork() {
+
+
+// ============ PROGRESS ============
+function loadStudentProgress() {
     const content = document.getElementById('dashboardContent');
     if (!content) return;
     
-    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading classwork...</p>';
+    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading progress...</p>';
     
-    let html = '<h3>📝 Classwork</h3>';
+    let html = '<h3>📊 Student Progress</h3>';
     
-    // Show form for teachers
     if (userData && userData.role === 'teacher') {
-        html += `
-            <div style="background:#f9f9f9;padding:15px;margin:10px 0;border-radius:8px;">
-                <h4>Post New Classwork</h4>
-                <input type="text" id="cwTitle" placeholder="Title" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-                <input type="text" id="cwSubject" placeholder="Subject" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-                <textarea id="cwDescription" placeholder="Description" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea>
-                <input type="date" id="cwDueDate" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-                <button onclick="addClasswork()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;">Post Classwork</button>
-            </div>
-        `;
-    }
-    
-    try {
-        const snapshot = await db.collection('classwork').orderBy('createdAt', 'desc').get();
-        
-        if (snapshot.empty) {
-            html += '<p style="color:#888;text-align:center;">No classwork posted yet.</p>';
-        } else {
-            snapshot.forEach(doc => {
-                const cw = doc.data();
-                html += `
-                    <div style="background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);border-left:4px solid #c8943e;">
-                        <strong style="color:#1a3a5c;">${cw.title}</strong>
-                        <small style="color:#888;"> (${cw.subject || 'General'})</small>
-                        <p style="margin:5px 0;">${cw.description || ''}</p>
-                        ${cw.dueDate ? '<p style="color:#c0392b;">📅 Due: ' + cw.dueDate + '</p>' : ''}
-                        <small style="color:#999;">Posted by ${cw.teacherName || 'Teacher'}</small>
-                    </div>
-                `;
+        db.collection('users').where('role', '==', 'student').get()
+            .then(studentsSnapshot => {
+                if (studentsSnapshot.empty) {
+                    content.innerHTML = '<h3>📊 Student Progress</h3><p style="color:#888;">No students registered yet.</p>';
+                    return;
+                }
+                
+                let items = '';
+                let promises = [];
+                
+                studentsSnapshot.forEach(studentDoc => {
+                    const student = studentDoc.data();
+                    const promise = db.collection('submissions')
+                        .where('studentId', '==', studentDoc.id)
+                        .get()
+                        .then(submissionsSnapshot => {
+                            const submitted = submissionsSnapshot.size;
+                            const total = Math.max(submitted + 2, 1);
+                            const percent = Math.round((submitted / total) * 100);
+                            
+                            items += `
+                                <div style="background:white;padding:12px;margin:8px 0;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
+                                    <strong>${student.fullName || 'Student'}</strong>
+                                    <div style="height:8px;background:#eee;border-radius:4px;margin:8px 0;">
+                                        <div style="height:100%;width:${percent}%;background:#2d8a4e;border-radius:4px;"></div>
+                                    </div>
+                                    <small>${submitted}/${total} completed (${percent}%)</small>
+                                </div>
+                            `;
+                        });
+                    promises.push(promise);
+                });
+                
+                Promise.all(promises).then(() => {
+                    content.innerHTML = '<h3>📊 Student Progress</h3>' + items;
+                });
+            })
+            .catch(err => {
+                content.innerHTML = '<h3>📊 Student Progress</h3><p style="color:red;">Error loading.</p>';
             });
-        }
-        
+    } else if (userData && userData.role === 'student') {
+        html += '<p style="color:#888;">Your progress will appear here as you submit classwork.</p>';
         content.innerHTML = html;
-    } catch (error) {
-        content.innerHTML = '<p style="color:red;">Error loading classwork.</p>';
+    } else {
+        html += '<p style="color:#888;">Progress tracking for parents. Contact school to link your child\'s account.</p>';
+        content.innerHTML = html;
     }
 }
 
-function addClasswork() {
-    const title = document.getElementById('cwTitle').value.trim();
-    const subject = document.getElementById('cwSubject').value.trim();
-    const description = document.getElementById('cwDescription').value.trim();
-    const dueDate = document.getElementById('cwDueDate').value;
+// ============ PROFILE ============
+function loadProfile() {
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
     
-    if (!title) {
-        showToast('Please enter a title', 'error');
+    content.innerHTML = `
+        <h3>👤 My Profile</h3>
+        <div style="background:white;padding:20px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
+            <p><strong>Name:</strong> ${userData?.fullName || 'N/A'}</p>
+            <p><strong>Email:</strong> ${userData?.email || 'N/A'}</p>
+            <p><strong>Role:</strong> ${userData?.role || 'N/A'}</p>
+        </div>
+    `;
+}
+
+// ============ PARENT PROGRESS (integrated into loadStudentProgress) ============
+// The loadStudentProgress function above already handles:
+// - Teachers: see all students
+// - Students: see own progress
+// - Parents: handled below
+
+function loadParentProgress() {
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
+    
+    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading your child\'s progress...</p>';
+    
+    if (!userData || userData.role !== 'parent') {
+        content.innerHTML = '<p style="color:#888;">This section is for parents only.</p>';
         return;
     }
     
-    db.collection('classwork').add({
-        title: title,
-        subject: subject,
-        description: description,
-        dueDate: dueDate,
-        teacherName: userData?.fullName || 'Teacher',
-        teacherId: currentUser?.uid,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    })
-    .then(() => {
-        showToast('Classwork posted!', 'success');
-        loadClasswork();
-    })
-    .catch(err => {
-        showToast('Error: ' + err.message, 'error');
-    });
-}
-
-// ============ STUDENT PROGRESS (for teachers) ============
-async function loadStudentProgress() {
-    const progressDiv = document.getElementById('studentProgress');
-    if (!progressDiv) return;
-    
-    progressDiv.innerHTML = '<p>Loading student progress...</p>';
-    
-    try {
-        // Get all students
-        const studentsSnapshot = await db.collection('users')
-            .where('role', '==', 'student')
-            .get();
-        
-        if (studentsSnapshot.empty) {
-            progressDiv.innerHTML = '<p>No students registered yet.</p>';
-            return;
-        }
-        
-        let html = '';
-        for (const studentDoc of studentsSnapshot.docs) {
-            const student = studentDoc.data();
+    db.collection('parentLinks')
+        .where('parentEmail', '==', userData.email)
+        .get()
+        .then(linkSnapshot => {
+            if (linkSnapshot.empty) {
+                content.innerHTML = '<h3>👨‍👩‍👧 Child Progress</h3><p style="color:#888;">No child accounts linked. When your child signs up with your email, their progress will appear here.</p>';
+                return;
+            }
             
-            // Get their submissions
-            const submissionsSnapshot = await db.collection('submissions')
-                .where('studentId', '==', studentDoc.id)
-                .get();
+            let html = '<h3>👨‍👩‍👧 Your Child\'s Progress</h3>';
+            let promises = [];
             
-            const submitted = submissionsSnapshot.size;
-            const total = Math.max(submitted + Math.floor(Math.random() * 3), 1); // Demo: add some pending
-            const percent = Math.round((submitted / total) * 100);
+            linkSnapshot.forEach(linkDoc => {
+                const link = linkDoc.data();
+                const promise = db.collection('users').doc(link.studentId).get()
+                    .then(studentDoc => {
+                        if (!studentDoc.exists) return;
+                        const student = studentDoc.data();
+                        
+                        return db.collection('submissions')
+                            .where('studentId', '==', link.studentId)
+                            .get()
+                            .then(submissionsSnapshot => {
+                                const submitted = submissionsSnapshot.size;
+                                const total = Math.max(submitted + 2, 1);
+                                const percent = Math.round((submitted / total) * 100);
+                                
+                                html += `
+                                    <div style="background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
+                                        <h4>👦 ${student.fullName || 'Student'}</h4>
+                                        <div style="height:10px;background:#eee;border-radius:5px;margin:10px 0;">
+                                            <div style="height:100%;width:${percent}%;background:#2d8a4e;border-radius:5px;"></div>
+                                        </div>
+                                        <small>${submitted}/${total} assignments completed (${percent}%)</small>
+                                    </div>
+                                `;
+                            });
+                    });
+                promises.push(promise);
+            });
             
-            html += `
-                <div style="background:white;padding:12px;margin-bottom:8px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
-                    <strong>${student.fullName}</strong>
-                    <div style="height:8px;background:#eee;border-radius:4px;margin:8px 0;">
-                        <div style="height:100%;width:${percent}%;background:#2d8a4e;border-radius:4px;"></div>
-                    </div>
-                    <small>${submitted}/${total} completed (${percent}%)</small>
-                </div>
-            `;
-        }
-        
-        progressDiv.innerHTML = html;
-    } catch (error) {
-        console.error('Error loading progress:', error);
-        progressDiv.innerHTML = '<p style="color:red;">Error loading progress.</p>';
-    }
-}
-// Show parent email field when student is selected
-document.getElementById('signupRole')?.addEventListener('change', function() {
-    const parentGroup = document.getElementById('parentEmailGroup');
-    if (parentGroup) {
-        parentGroup.style.display = this.value === 'student' ? 'block' : 'none';
-    }
-});
-
-// ============ PARENT: LOAD CHILD PROGRESS ============
-async function loadChildProgress() {
-    const progressDiv = document.getElementById('parentProgress');
-    if (!progressDiv) return;
-    
-    progressDiv.innerHTML = '<p>Loading your child\'s progress...</p>';
-    
-    try {
-        // Find parent link
-        const linkSnapshot = await db.collection('parentLinks')
-            .where('parentEmail', '==', userData?.email)
-            .get();
-        
-        if (linkSnapshot.empty) {
-            progressDiv.innerHTML = '<p>No child accounts linked. Please contact the school to link your child\'s account.</p>';
-            return;
-        }
-        
-        let html = '';
-        for (const linkDoc of linkSnapshot.docs) {
-            const link = linkDoc.data();
-            
-            // Get student data
-            const studentDoc = await db.collection('users').doc(link.studentId).get();
-            if (!studentDoc.exists) continue;
-            
-            const student = studentDoc.data();
-            const submissionsSnapshot = await db.collection('submissions')
-                .where('studentId', '==', link.studentId)
-                .get();
-            
-            const submitted = submissionsSnapshot.size;
-            const total = Math.max(submitted + 2, 1);
-            const percent = Math.round((submitted / total) * 100);
-            
-            html += `
-                <div style="background:white;padding:15px;margin-bottom:10px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-                    <h4>👦 ${student.fullName}</h4>
-                    <div style="height:10px;background:#eee;border-radius:5px;margin:10px 0;">
-                        <div style="height:100%;width:${percent}%;background:#2d8a4e;border-radius:5px;"></div>
-                    </div>
-                    <small>${submitted} assignments completed (${percent}%)</small>
-                </div>
-            `;
-        }
-        
-        progressDiv.innerHTML = html || '<p>No progress data available.</p>';
-    } catch (error) {
-        console.error('Error loading child progress:', error);
-        progressDiv.innerHTML = '<p style="color:red;">Error loading progress.</p>';
-    }
+            Promise.all(promises).then(() => {
+                content.innerHTML = html;
+            });
+        })
+        .catch(err => {
+            content.innerHTML = '<p style="color:red;">Error loading progress.</p>';
+        });
 }
 
 // ============ AUTH STATE LISTENER ============
@@ -1822,282 +1751,83 @@ if (storedUser && auth.currentUser) {
 console.log('✅ Mbogo College School Ready!');
 console.log('📧 mbogocollegeschool@yahoo.com');
 console.log('📞 +256 703 204 367');
-// ============ DASHBOARD CONTENT LOADERS ============
 
-
-    
-    // Load from Firestore
-    try {
-        const snapshot = await db.collection('announcements').orderBy('createdAt', 'desc').limit(20).get();
-        const newsList = document.getElementById('newsList');
-        if (!newsList) return;
-        
-        if (snapshot.empty) {
-            newsList.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">No announcements yet.</p>';
-            return;
-        }
-        
-        let html = '';
-        snapshot.forEach(doc => {
-            const news = doc.data();
-            html += `
-                <div style="background:white;padding:15px;margin-bottom:10px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);border-left:4px solid #c8943e;">
-                    <strong>${news.title}</strong>
-                    <p style="color:#555;">${news.content}</p>
-                    <small style="color:#999;">Posted by ${news.author || 'Admin'}</small>
-                </div>
-            `;
-        });
-        newsList.innerHTML = html;
-    } catch (error) {
-        console.error('Error:', error);
-    }
-}
-
-async function loadTimetable() {
-    const content = document.getElementById('dashboardContent');
-    if (!content) return;
-    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading timetable...</p>';
-    
-    try {
-        const snapshot = await db.collection('timetable').get();
-        
-        let html = '<h3>📅 Class Timetable</h3>';
-        
-        if (snapshot.empty) {
-            html += '<p style="color:#888;">No timetable entries yet.</p>';
-        } else {
-            html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">';
-            snapshot.forEach(doc => {
-                const tt = doc.data();
-                html += `
-                    <div style="background:white;padding:15px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
-                        <strong>${tt.day}</strong>
-                        <p>${tt.subject}</p>
-                        <small>${tt.time} | ${tt.teacher}</small>
-                    </div>
-                `;
-            });
-            html += '</div>';
-        }
-        
-        content.innerHTML = html;
-    } catch (error) {
-        content.innerHTML = '<p style="color:red;">Error loading timetable.</p>';
-    }
-}
-// Inside the forEach where timetable entries are displayed
-snapshot.forEach(doc => {
-    const t = doc.data();
-    items += `
-        <div style="background:white;padding:12px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);position:relative;">
-            <strong style="color:#1a3a5c;">${t.day}</strong>
-            <p style="margin:5px 0;">📖 ${t.subject}</p>
-            <small>⏰ ${t.time}</small><br>
-            <small>👨‍🏫 ${t.teacher}</small>
-            ${userData && userData.role === 'teacher' ? 
-                `<button onclick="deleteTimetable('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;font-size:12px;">✕</button>` 
-                : ''}
-        </div>
-    `;
-});
-function deleteTimetable(id) {
-    if (!confirm('Delete this timetable entry?')) return;
-    
-    db.collection('timetable').doc(id).delete()
-        .then(() => {
-            showToast('Deleted!', 'success');
-            loadTimetable();
-        })
-        .catch(err => showToast('Error: ' + err.message, 'error'));
-}
-
-function deleteClasswork(id) {
-    if (!confirm('Delete this classwork?')) return;
-    
-    db.collection('classwork').doc(id).delete()
-        .then(() => {
-            showToast('Deleted!', 'success');
-            loadClasswork();
-        })
-        .catch(err => showToast('Error: ' + err.message, 'error'));
-}
-
-function deleteAnnouncement(id) {
-    if (!confirm('Delete this announcement?')) return;
-    
-    db.collection('announcements').doc(id).delete()
-        .then(() => {
-            showToast('Deleted!', 'success');
-            loadAnnouncements();
-        })
-        .catch(err => showToast('Error: ' + err.message, 'error'));
-}
-
-async function loadClasswork() {
-    const content = document.getElementById('dashboardContent');
-    if (!content) return;
-    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading classwork...</p>';
-    
-    try {
-        const snapshot = await db.collection('classwork').orderBy('createdAt', 'desc').get();
-        
-        let html = '<h3>📝 Classwork</h3>';
-        
-        if (snapshot.empty) {
-            html += '<p style="color:#888;">No classwork posted yet.</p>';
-        } else {
-            snapshot.forEach(doc => {
-                const cw = doc.data();
-                html += `
-                    <div style="background:white;padding:15px;margin-bottom:10px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
-                        <strong>${cw.title}</strong>
-                        <small style="color:#888;"> (${cw.subject || 'General'})</small>
-                        <p style="color:#555;">${cw.description || ''}</p>
-                        <small style="color:#999;">Posted by ${cw.teacherName || 'Teacher'}</small>
-                    </div>
-                `;
-            });
-        }
-        
-        content.innerHTML = html;
-    } catch (error) {
-        content.innerHTML = '<p style="color:red;">Error loading classwork.</p>';
-    }
-}
-snapshot.forEach(doc => {
-    const c = doc.data();
-    items += `
-        <div style="background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-left:4px solid #c8943e;position:relative;">
-            ${userData && userData.role === 'teacher' ? 
-                `<button onclick="deleteClasswork('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>` 
-                : ''}
-            <strong>${c.title}</strong>
-            <small style="color:#888;"> (${c.subject || 'General'})</small>
-            <p>${c.description || ''}</p>
-            ${c.dueDate ? '<p style="color:#c0392b;">📅 Due: ' + c.dueDate + '</p>' : ''}
-            <small>Posted by ${c.teacherName || 'Teacher'}</small>
-        </div>
-    `;
-});
-
-
-async function loadStudentProgress() {
-    const content = document.getElementById('dashboardContent');
-    if (!content) return;
-    content.innerHTML = '<h3>📊 Progress</h3><p style="color:#888;">Progress tracking loads here.</p>';
-}
+// ============ ANNOUNCEMENTS ============
 function loadAnnouncements() {
     const content = document.getElementById('dashboardContent');
     if (!content) return;
-    content.innerHTML = '<p>Loading announcements...</p>';
-    // ... your announcements code
-}
-
-async function loadProfile() {
-    const content = document.getElementById('dashboardContent');
-    if (!content) return;
-    content.innerHTML = `
-        <div style="background:white;padding:20px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
-            <h3>👤 My Profile</h3>
-            <p><strong>Name:</strong> ${userData?.fullName || 'N/A'}</p>
-            <p><strong>Email:</strong> ${userData?.email || 'N/A'}</p>
-            <p><strong>Role:</strong> ${userData?.role || 'N/A'}</p>
+    
+    let html = '<h3>📢 Announcements</h3>';
+    html += `
+        <div style="background:#e8f0ff;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #2980b9;">
+            <h4>➕ Post Announcement</h4>
+            <input type="text" id="newsTitle" placeholder="Title *" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+            <textarea id="newsContent" placeholder="Content" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea>
+            <button onclick="postAnnouncement()" style="background:#2980b9;color:white;padding:10px 20px;border:none;border-radius:25px;">Post</button>
         </div>
     `;
+    html += '<div id="newsList">Loading...</div>';
+    content.innerHTML = html;
+    
+    db.collection('announcements').orderBy('createdAt', 'desc').get()
+        .then(snapshot => {
+            const list = document.getElementById('newsList');
+            if (!list) return;
+            if (snapshot.empty) { list.innerHTML = '<p style="color:#888;">No announcements yet.</p>'; return; }
+            let items = '';
+            snapshot.forEach(doc => {
+                const n = doc.data();
+                items += `<div style="background:white;padding:12px;margin:8px 0;border-radius:8px;border-left:4px solid #2980b9;position:relative;">
+                    ${userData&&userData.role==='teacher'?`<button onclick="deleteAnnouncement('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>`:''}
+                    <strong>${n.title||'N/A'}</strong><p>${n.content||''}</p><small>By ${n.author||'Admin'}</small></div>`;
+            });
+            list.innerHTML = items;
+        }).catch(err => { document.getElementById('newsList').innerHTML = '<p style="color:red;">Error</p>'; });
 }
 
-async function postAnnouncement() {
+function postAnnouncement() {
     const title = document.getElementById('newsTitle')?.value?.trim();
     const content = document.getElementById('newsContent')?.value?.trim();
-    const type = document.getElementById('newsType')?.value || 'announcement';
-    
-    if (!title || !content) {
-        showToast('Please fill in both title and content', 'error');
-        return;
-    }
-    
-    try {
-        await db.collection('announcements').add({
-            title: title,
-            content: content,
-            type: type,
-            author: userData?.fullName || 'Admin',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        showToast('Announcement posted!', 'success');
-        loadAnnouncements();
-    } catch (error) {
-        showToast('Error: ' + error.message, 'error');
-    }
+    if (!title || !content) { alert('Fill both fields'); return; }
+    db.collection('announcements').add({ title, content, author: userData?.fullName || 'Admin', createdAt: firebase.firestore.FieldValue.serverTimestamp() })
+        .then(() => { showToast('Posted!','success'); loadAnnouncements(); })
+        .catch(err => showToast('Error: '+err.message,'error'));
 }
-snapshot.forEach(doc => {
-    const n = doc.data();
-    html += `
-        <div style="background:white;padding:12px;margin:8px 0;border-radius:8px;border-left:4px solid #c8943e;position:relative;">
-            ${userData && userData.role === 'teacher' ? 
-                `<button onclick="deleteAnnouncement('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>` 
-                : ''}
-            <strong>${n.title}</strong>
-            <p>${n.content}</p>
-            <small>By ${n.author || 'Admin'}</small>
-        </div>
-    `;
-});
-// ============ DASHBOARD CONTENT LOADERS ============
 
-async function loadAnnouncements() {
+function deleteAnnouncement(id) {
+    if (!confirm('Delete?')) return;
+    db.collection('announcements').doc(id).delete()
+        .then(() => { showToast('Deleted!','success'); loadAnnouncements(); })
+        .catch(err => showToast('Error: '+err.message,'error'));
+}
+
+// ============ PROGRESS ============
+function loadStudentProgress() {
     const content = document.getElementById('dashboardContent');
     if (!content) return;
-    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading announcements...</p>';
+    content.innerHTML = '<p>Loading progress...</p>';
     
-    // Check if user is teacher
     if (userData && userData.role === 'teacher') {
-        content.innerHTML = `
-            <div style="background:white;padding:20px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);margin-bottom:20px;">
-                <h3>📢 Post New Announcement</h3>
-                <input type="text" id="newsTitle" class="form-control" placeholder="Title" style="margin-bottom:10px;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;">
-                <textarea id="newsContent" class="form-control" placeholder="Content" style="margin-bottom:10px;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;" rows="3"></textarea>
-                <select id="newsType" class="form-control" style="margin-bottom:10px;width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;">
-                    <option value="announcement">General Announcement</option>
-                    <option value="urgent">Urgent Notice</option>
-                    <option value="event">School Event</option>
-                </select>
-                <button class="btn btn-primary" onclick="postAnnouncement()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;cursor:pointer;">Post Announcement</button>
-            </div>
-            <div id="newsList"></div>
-        `;
+        db.collection('users').where('role','==','student').get()
+            .then(snapshot => {
+                if (snapshot.empty) { content.innerHTML = '<h3>📊 Progress</h3><p style="color:#888;">No students yet.</p>'; return; }
+                let items = '<h3>📊 Student Progress</h3>';
+                snapshot.forEach(doc => {
+                    const s = doc.data();
+                    items += `<div style="background:white;padding:10px;margin:5px 0;border-radius:8px;"><strong>${s.fullName||'Student'}</strong><div style="height:8px;background:#eee;border-radius:4px;margin:5px 0;"><div style="height:100%;width:50%;background:#2d8a4e;border-radius:4px;"></div></div><small>Progress: 50%</small></div>`;
+                });
+                content.innerHTML = items;
+            });
     } else {
-        content.innerHTML = '<div id="newsList"></div>';
+        content.innerHTML = '<h3>📊 Progress</h3><p style="color:#888;">Your progress appears here as you submit work.</p>';
     }
-    
-    // Load from Firestore
-    try {
-        const snapshot = await db.collection('announcements').orderBy('createdAt', 'desc').limit(20).get();
-        const newsList = document.getElementById('newsList');
-        if (!newsList) return;
-        
-        if (snapshot.empty) {
-            newsList.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">No announcements yet.</p>';
-            return;
-        }
-        
-        let html = '';
-        snapshot.forEach(doc => {
-            const news = doc.data();
-            html += `
-                <div style="background:white;padding:15px;margin-bottom:10px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);border-left:4px solid #c8943e;">
-                    <strong>${news.title}</strong>
-                    <p style="color:#555;">${news.content}</p>
-                    <small style="color:#999;">Posted by ${news.author || 'Admin'}</small>
-                </div>
-            `;
-        });
-        newsList.innerHTML = html;
-    } catch (error) {
-        console.error('Error:', error);
-    }
+}
+
+// ============ PROFILE ============
+function loadProfile() {
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
+    content.innerHTML = `<div style="background:white;padding:20px;border-radius:12px;"><h3>👤 Profile</h3><p><strong>Name:</strong> ${userData?.fullName||'N/A'}</p><p><strong>Email:</strong> ${userData?.email||'N/A'}</p><p><strong>Role:</strong> ${userData?.role||'N/A'}</p></div>`;
 }
 
 async function loadTimetable() {
