@@ -1341,7 +1341,21 @@ function addTimetable() {
     })
     .catch(err => alert('Error: ' + err.message));
 }
-
+// Inside the forEach where timetable entries are displayed
+snapshot.forEach(doc => {
+    const t = doc.data();
+    items += `
+        <div style="background:white;padding:12px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);position:relative;">
+            <strong style="color:#1a3a5c;">${t.day}</strong>
+            <p style="margin:5px 0;">📖 ${t.subject}</p>
+            <small>⏰ ${t.time}</small><br>
+            <small>👨‍🏫 ${t.teacher}</small>
+            ${userData && userData.role === 'teacher' ? 
+                `<button onclick="deleteTimetable('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;font-size:12px;">✕</button>` 
+                : ''}
+        </div>
+    `;
+});
 // ============ CLASSWORK ============
 async function loadClasswork() {
     const content = document.getElementById('dashboardContent');
@@ -1808,6 +1822,53 @@ async function loadTimetable() {
         content.innerHTML = '<p style="color:red;">Error loading timetable.</p>';
     }
 }
+// Inside the forEach where timetable entries are displayed
+snapshot.forEach(doc => {
+    const t = doc.data();
+    items += `
+        <div style="background:white;padding:12px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);position:relative;">
+            <strong style="color:#1a3a5c;">${t.day}</strong>
+            <p style="margin:5px 0;">📖 ${t.subject}</p>
+            <small>⏰ ${t.time}</small><br>
+            <small>👨‍🏫 ${t.teacher}</small>
+            ${userData && userData.role === 'teacher' ? 
+                `<button onclick="deleteTimetable('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;font-size:12px;">✕</button>` 
+                : ''}
+        </div>
+    `;
+});
+function deleteTimetable(id) {
+    if (!confirm('Delete this timetable entry?')) return;
+    
+    db.collection('timetable').doc(id).delete()
+        .then(() => {
+            showToast('Deleted!', 'success');
+            loadTimetable();
+        })
+        .catch(err => showToast('Error: ' + err.message, 'error'));
+}
+
+function deleteClasswork(id) {
+    if (!confirm('Delete this classwork?')) return;
+    
+    db.collection('classwork').doc(id).delete()
+        .then(() => {
+            showToast('Deleted!', 'success');
+            loadClasswork();
+        })
+        .catch(err => showToast('Error: ' + err.message, 'error'));
+}
+
+function deleteAnnouncement(id) {
+    if (!confirm('Delete this announcement?')) return;
+    
+    db.collection('announcements').doc(id).delete()
+        .then(() => {
+            showToast('Deleted!', 'success');
+            loadAnnouncements();
+        })
+        .catch(err => showToast('Error: ' + err.message, 'error'));
+}
 
 async function loadClasswork() {
     const content = document.getElementById('dashboardContent');
@@ -1840,6 +1901,22 @@ async function loadClasswork() {
         content.innerHTML = '<p style="color:red;">Error loading classwork.</p>';
     }
 }
+snapshot.forEach(doc => {
+    const c = doc.data();
+    items += `
+        <div style="background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-left:4px solid #c8943e;position:relative;">
+            ${userData && userData.role === 'teacher' ? 
+                `<button onclick="deleteClasswork('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>` 
+                : ''}
+            <strong>${c.title}</strong>
+            <small style="color:#888;"> (${c.subject || 'General'})</small>
+            <p>${c.description || ''}</p>
+            ${c.dueDate ? '<p style="color:#c0392b;">📅 Due: ' + c.dueDate + '</p>' : ''}
+            <small>Posted by ${c.teacherName || 'Teacher'}</small>
+        </div>
+    `;
+});
+
 
 async function loadStudentProgress() {
     const content = document.getElementById('dashboardContent');
@@ -1891,6 +1968,19 @@ async function postAnnouncement() {
         showToast('Error: ' + error.message, 'error');
     }
 }
+snapshot.forEach(doc => {
+    const n = doc.data();
+    html += `
+        <div style="background:white;padding:12px;margin:8px 0;border-radius:8px;border-left:4px solid #c8943e;position:relative;">
+            ${userData && userData.role === 'teacher' ? 
+                `<button onclick="deleteAnnouncement('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>` 
+                : ''}
+            <strong>${n.title}</strong>
+            <p>${n.content}</p>
+            <small>By ${n.author || 'Admin'}</small>
+        </div>
+    `;
+});
 // ============ DASHBOARD CONTENT LOADERS ============
 
 async function loadAnnouncements() {
