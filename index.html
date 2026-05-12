@@ -1015,13 +1015,12 @@ const firebaseConfig = {
     messagingSenderId: "66126002537",
     appId: "1:66126002537:web:9187261918ae640d9465f8"
 };
-
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-
 console.log('✅ Firebase connected!');
+
 
 // ============ GLOBAL STATE ============
 let currentUser = null;
@@ -1255,378 +1254,113 @@ function updateUIBasedOnAuth() {
         if (navDashboard) navDashboard.style.display = 'none';
     }
 }
-// ============ DASHBOARD ============
+
+            // ============ DASHBOARD ============
 function showDashboard() {
     document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
     const dashboard = document.getElementById('dashboardLayout');
-    if (dashboard) {
-        dashboard.style.display = 'grid';
-        dashboard.classList.add('active');
-    }
+    if (dashboard) { dashboard.style.display = 'grid'; dashboard.classList.add('active'); }
     const dashUserName = document.getElementById('dashUserName');
-    if (dashUserName && userData) {
-        dashUserName.textContent = userData.fullName || 'User';
-    }
+    if (dashUserName && userData) dashUserName.textContent = userData.fullName || 'User';
     loadAnnouncements();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// ============ TIMETABLE ============
-function loadTimetable() {
-    const content = document.getElementById('dashboardContent');
-    if (!content) return;
-
-    let html = '<h3>📅 Class Timetable</h3>';
-
-    // Teacher form
-    html += `
-        <div style="background:#e8f4e8;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #2d8a4e;">
-            <h4>➕ Add Timetable Entry</h4>
-            <select id="ttDay" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-                <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
-                <option>Thursday</option><option>Friday</option>
-            </select>
-            <input type="text" id="ttTime" placeholder="Time (e.g.,7:20-8:40 AM)" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-            <input type="text" id="ttSubject" placeholder="Subject" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-            <input type="text" id="ttTeacher" placeholder="Teacher name" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-            <button onclick="addTimetable()" style="background:#2d8a4e;color:white;padding:10px 20px;border:none;border-radius:25px;">Save Entry</button>
-        </div>
-    `;
-
-    html += '<div id="ttList">Loading...</div>';
-    content.innerHTML = html;
-
-    db.collection('timetable').get()
-        .then(snapshot => {
-            const list = document.getElementById('ttList');
-            if (!list) return;
-
-            console.log('Timetable docs found:', snapshot.size);
-
-            if (snapshot.empty) {
-                list.innerHTML = '<p style="color:#888;">No timetable entries yet.</p>';
-                return;
-            }
-
-            let items = '';
-            snapshot.forEach(doc => {
-                const t = doc.data();
-                items += `
-                    <div style="background:white;padding:12px;margin:5px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-                        <strong>${t.day || 'N/A'}</strong>
-                        <p>📖 ${t.subject || 'N/A'}</p>
-                        <small>⏰ ${t.time || 'N/A'}</small><br>
-                        <small>👨‍🏫 ${t.teacher || 'N/A'}</small>
-                    </div>
-                `;
-            });
-            list.innerHTML = items;
-        })
-        .catch(err => {
-            console.error('Error:', err);
-            document.getElementById('ttList').innerHTML = '<p style="color:red;">Error: ' + err.message + '</p>';
-        });
-}
-
-function addTimetable() {
-    const day = document.getElementById('ttDay')?.value;
-    const time = document.getElementById('ttTime')?.value?.trim();
-    const subject = document.getElementById('ttSubject')?.value?.trim();
-    const teacher = document.getElementById('ttTeacher')?.value?.trim();
-
-    if (!time || !subject) {
-        alert('Please fill time and subject');
-        return;
-    }
-
-    db.collection('timetable').add({
-        day: day,
-        time: time,
-        subject: subject,
-        teacher: teacher || 'Staff',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    })
-    .then(() => {
-        showToast('Added!', 'success');
-        loadTimetable();
-    })
-    .catch(err => alert('Error: ' + err.message));
-}
-    // Load existing entries
-    try {
-        const snapshot = await db.collection('timetable').get();
-        const list = document.getElementById('timetableList');
-        
-        if (snapshot.empty) {
-            list.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">No timetable entries yet. Use the form above to add one.</p>';
-            return;
-        }
-        
-        let items = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">';
-        snapshot.forEach(doc => {
-            const t = doc.data();
-            items += `
-                <div style="background:white;padding:12px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-                    <strong style="color:#1a3a5c;">${t.day}</strong>
-                    <p style="margin:5px 0;">📖 ${t.subject}</p>
-                    <small>⏰ ${t.time}</small><br>
-                    <small>👨‍🏫 ${t.teacher}</small>
-                </div>
-            `;
-        });
-        items += '</div>';
-        list.innerHTML = items;
-    } catch (error) {
-        document.getElementById('timetableList').innerHTML = '<p style="color:red;">Error loading.</p>';
-    }
-}
-
-function addTimetable() {
-    const day = document.getElementById('ttDay')?.value;
-    const time = document.getElementById('ttTime')?.value?.trim();
-    const subject = document.getElementById('ttSubject')?.value?.trim();
-    const teacher = document.getElementById('ttTeacher')?.value?.trim();
-    
-    if (!time || !subject) {
-        alert('Please fill time and subject');
-        return;
-    }
-    
-    db.collection('timetable').add({
-        day: day,
-        time: time,
-        subject: subject,
-        teacher: teacher || 'Staff',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    })
-    .then(() => {
-        showToast('Added!', 'success');
-        loadTimetable();
-    })
-    .catch(err => alert('Error: ' + err.message));
-}
-// Inside the forEach where timetable entries are displayed
-snapshot.forEach(doc => {
-    const t = doc.data();
-    items += `
-        <div style="background:white;padding:12px;margin:5px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);position:relative;">
-            ${userData && userData.role === 'teacher' ? 
-                `<button onclick="deleteTimetable('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;font-size:12px;">✕</button>` 
-                : ''}
-            <strong style="color:#1a3a5c;">${t.day || 'N/A'}</strong>
-            <p style="margin:5px 0;">📖 ${t.subject || 'N/A'}</p>
-            <small>⏰ ${t.time || 'N/A'}</small><br>
-            <small>👨‍🏫 ${t.teacher || 'N/A'}</small>
-        </div>
-    `;
-});
-// ============ CLASSWORK ============
-function loadClasswork() {
-    const content = document.getElementById('dashboardContent');
-    if (!content) return;
-
-    let html = '<h3>📝 Classwork</h3>';
-    html += `
-        <div style="background:#fff3e0;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #c8943e;">
-            <h4>➕ Post New Classwork</h4>
-            <input type="text" id="cwTitle" placeholder="Title *" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-            <input type="text" id="cwSubject" placeholder="Subject" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-            <textarea id="cwDescription" placeholder="Description" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea>
-            <input type="date" id="cwDueDate" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-            <button onclick="addClasswork()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;">Post Classwork</button>
-        </div>
-    `;
-    html += '<div id="cwList">Loading...</div>';
-    content.innerHTML = html;
-
-    db.collection('classwork').orderBy('createdAt', 'desc').get()
-        .then(snapshot => {
-            const list = document.getElementById('cwList');
-            if (!list) return;
-            if (snapshot.empty) {
-                list.innerHTML = '<p style="color:#888;">No classwork posted yet.</p>';
-                return;
-            }
-            let items = '';
-            snapshot.forEach(doc => {
-                const c = doc.data();
-                items += `
-                    <div style="background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-left:4px solid #c8943e;position:relative;">
-                        ${userData && userData.role === 'teacher' ? `<button onclick="deleteClasswork('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>` : ''}
-                        <strong>${c.title || 'N/A'}</strong>
-                        <small style="color:#888;"> (${c.subject || 'General'})</small>
-                        <p>${c.description || ''}</p>
-                        ${c.dueDate ? '<p style="color:#c0392b;">📅 Due: ' + c.dueDate + '</p>' : ''}
-                        <small>Posted by ${c.teacherName || 'Teacher'}</small>
-                    </div>
-                `;
-            });
-            list.innerHTML = items;
-        })
-        .catch(err => {
-            document.getElementById('cwList').innerHTML = '<p style="color:red;">Error: ' + err.message + '</p>';
-        });
-}
-
-function addClasswork() {
-    const title = document.getElementById('cwTitle')?.value?.trim();
-    const subject = document.getElementById('cwSubject')?.value?.trim();
-    const description = document.getElementById('cwDescription')?.value?.trim();
-    const dueDate = document.getElementById('cwDueDate')?.value;
-    if (!title) { alert('Please enter a title'); return; }
-    db.collection('classwork').add({
-        title, subject, description, dueDate,
-        teacherName: userData?.fullName || 'Teacher',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(() => { showToast('Posted!', 'success'); loadClasswork(); })
-      .catch(err => alert('Error: ' + err.message));
-}
-
-function deleteClasswork(id) {
-    if (!confirm('Delete?')) return;
-    db.collection('classwork').doc(id).delete()
-        .then(() => { showToast('Deleted!', 'success'); loadClasswork(); })
-        .catch(err => showToast('Error: ' + err.message, 'error'));
 }
 
 // ============ ANNOUNCEMENTS ============
 function loadAnnouncements() {
     const content = document.getElementById('dashboardContent');
     if (!content) return;
-    
     let html = '<h3>📢 Announcements</h3>';
-    
-    html += `
-        <div style="background:#e8f0ff;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #2980b9;">
-            <h4>➕ Post Announcement</h4>
-            <input type="text" id="newsTitle" placeholder="Title *" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
-            <textarea id="newsContent" placeholder="Content" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea>
-            <button onclick="postAnnouncement()" style="background:#2980b9;color:white;padding:10px 20px;border:none;border-radius:25px;">Post Announcement</button>
-        </div>
-    `;
-    
-    html += '<div id="newsList">Loading...</div>';
+    html += `<div style="background:#e8f0ff;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #2980b9;"><h4>➕ Post Announcement</h4><input type="text" id="newsTitle" placeholder="Title *" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><textarea id="newsContent" placeholder="Content" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea><button onclick="postAnnouncement()" style="background:#2980b9;color:white;padding:10px 20px;border:none;border-radius:25px;">Post</button></div><div id="newsList">Loading...</div>`;
     content.innerHTML = html;
-    
-    db.collection('announcements').orderBy('createdAt', 'desc').get()
-        .then(snapshot => {
-            const list = document.getElementById('newsList');
-            if (!list) return;
-            
-            if (snapshot.empty) {
-                list.innerHTML = '<p style="color:#888;">No announcements yet.</p>';
-                return;
-            }
-            
-            let items = '';
-            snapshot.forEach(doc => {
-                const n = doc.data();
-                items += `
-                    <div style="background:white;padding:12px;margin:8px 0;border-radius:8px;border-left:4px solid #2980b9;position:relative;">
-                        ${userData && userData.role === 'teacher' ? `<button onclick="deleteAnnouncement('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>` : ''}
-                        <strong>${n.title || 'N/A'}</strong>
-                        <p>${n.content || ''}</p>
-                        <small>By ${n.author || 'Admin'}</small>
-                    </div>
-                `;
-            });
-            list.innerHTML = items;
-        })
-        .catch(err => {
-            document.getElementById('newsList').innerHTML = '<p style="color:red;">Error: ' + err.message + '</p>';
+    db.collection('announcements').orderBy('createdAt','desc').get().then(snapshot => {
+        const list = document.getElementById('newsList');
+        if (!list) return;
+        if (snapshot.empty) { list.innerHTML = '<p style="color:#888;">No announcements yet.</p>'; return; }
+        let items = '';
+        snapshot.forEach(doc => {
+            const n = doc.data();
+            items += `<div style="background:white;padding:12px;margin:8px 0;border-radius:8px;border-left:4px solid #2980b9;position:relative;">${userData&&userData.role==='teacher'?`<button onclick="deleteAnnouncement('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>`:''}<strong>${n.title||'N/A'}</strong><p>${n.content||''}</p><small>By ${n.author||'Admin'}</small></div>`;
         });
+        list.innerHTML = items;
+    }).catch(err => { document.getElementById('newsList').innerHTML = '<p style="color:red;">Error</p>'; });
 }
-
 function postAnnouncement() {
     const title = document.getElementById('newsTitle')?.value?.trim();
     const content = document.getElementById('newsContent')?.value?.trim();
-    
-    if (!title || !content) {
-        alert('Please fill both fields');
-        return;
-    }
-    
-    db.collection('announcements').add({
-        title: title,
-        content: content,
-        author: userData?.fullName || 'Admin',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    })
-    .then(() => {
-        showToast('Posted!', 'success');
-        loadAnnouncements();
-    })
-    .catch(err => showToast('Error: ' + err.message, 'error'));
+    if (!title || !content) { alert('Fill both fields'); return; }
+    db.collection('announcements').add({ title, content, author: userData?.fullName||'Admin', createdAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => { showToast('Posted!','success'); loadAnnouncements(); }).catch(err => showToast('Error: '+err.message,'error'));
 }
+function deleteAnnouncement(id) { if (!confirm('Delete?')) return; db.collection('announcements').doc(id).delete().then(() => { showToast('Deleted!','success'); loadAnnouncements(); }).catch(err => showToast('Error: '+err.message,'error')); }
 
-function deleteAnnouncement(id) {
-    if (!confirm('Delete this announcement?')) return;
-    db.collection('announcements').doc(id).delete()
-        .then(() => {
-            showToast('Deleted!', 'success');
-            loadAnnouncements();
-        })
-        .catch(err => showToast('Error: ' + err.message, 'error'));
+// ============ TIMETABLE ============
+function loadTimetable() {
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
+    let html = '<h3>📅 Class Timetable</h3>';
+    html += `<div style="background:#e8f4e8;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #2d8a4e;"><h4>➕ Add Timetable Entry</h4><select id="ttDay" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option></select><input type="text" id="ttTime" placeholder="Time" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><input type="text" id="ttSubject" placeholder="Subject" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><input type="text" id="ttTeacher" placeholder="Teacher" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><button onclick="addTimetable()" style="background:#2d8a4e;color:white;padding:10px 20px;border:none;border-radius:25px;">Save</button></div><div id="ttList">Loading...</div>`;
+    content.innerHTML = html;
+    db.collection('timetable').get().then(snapshot => {
+        const list = document.getElementById('ttList');
+        if (!list) return;
+        if (snapshot.empty) { list.innerHTML = '<p style="color:#888;">No timetable entries yet.</p>'; return; }
+        let items = '';
+        snapshot.forEach(doc => {
+            const t = doc.data();
+            items += `<div style="background:white;padding:12px;margin:5px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);position:relative;">${userData&&userData.role==='teacher'?`<button onclick="deleteTimetable('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>`:''}<strong>${t.day||'N/A'}</strong><p>📖 ${t.subject||'N/A'}</p><small>⏰ ${t.time||'N/A'}</small><br><small>👨‍🏫 ${t.teacher||'N/A'}</small></div>`;
+        });
+        list.innerHTML = items;
+    }).catch(err => { document.getElementById('ttList').innerHTML = '<p style="color:red;">Error</p>'; });
 }
+function addTimetable() {
+    const day = document.getElementById('ttDay')?.value;
+    const time = document.getElementById('ttTime')?.value?.trim();
+    const subject = document.getElementById('ttSubject')?.value?.trim();
+    const teacher = document.getElementById('ttTeacher')?.value?.trim();
+    if (!time || !subject) { alert('Fill time and subject'); return; }
+    db.collection('timetable').add({ day, time, subject, teacher: teacher||'Staff', createdAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => { showToast('Added!','success'); loadTimetable(); }).catch(err => alert('Error: '+err.message));
+}
+function deleteTimetable(id) { if (!confirm('Delete?')) return; db.collection('timetable').doc(id).delete().then(() => { showToast('Deleted!','success'); loadTimetable(); }).catch(err => showToast('Error: '+err.message,'error')); }
 
+// ============ CLASSWORK ============
+function loadClasswork() {
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
+    let html = '<h3>📝 Classwork</h3>';
+    html += `<div style="background:#fff3e0;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #c8943e;"><h4>➕ Post Classwork</h4><input type="text" id="cwTitle" placeholder="Title *" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><input type="text" id="cwSubject" placeholder="Subject" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><textarea id="cwDescription" placeholder="Description" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea><input type="date" id="cwDueDate" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><button onclick="addClasswork()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;">Post</button></div><div id="cwList">Loading...</div>`;
+    content.innerHTML = html;
+    db.collection('classwork').orderBy('createdAt','desc').get().then(snapshot => {
+        const list = document.getElementById('cwList');
+        if (!list) return;
+        if (snapshot.empty) { list.innerHTML = '<p style="color:#888;">No classwork yet.</p>'; return; }
+        let items = '';
+        snapshot.forEach(doc => {
+            const c = doc.data();
+            items += `<div style="background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-left:4px solid #c8943e;position:relative;">${userData&&userData.role==='teacher'?`<button onclick="deleteClasswork('${doc.id}')" style="position:absolute;top:5px;right:5px;background:#c0392b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>`:''}<strong>${c.title||'N/A'}</strong><small> (${c.subject||'General'})</small><p>${c.description||''}</p>${c.dueDate?'<p style="color:#c0392b;">📅 Due: '+c.dueDate+'</p>':''}<small>By ${c.teacherName||'Teacher'}</small></div>`;
+        });
+        list.innerHTML = items;
+    }).catch(err => { document.getElementById('cwList').innerHTML = '<p style="color:red;">Error</p>'; });
+}
+function addClasswork() {
+    const title = document.getElementById('cwTitle')?.value?.trim();
+    const subject = document.getElementById('cwSubject')?.value?.trim();
+    const description = document.getElementById('cwDescription')?.value?.trim();
+    const dueDate = document.getElementById('cwDueDate')?.value;
+    if (!title) { alert('Enter a title'); return; }
+    db.collection('classwork').add({ title, subject, description, dueDate, teacherName: userData?.fullName||'Teacher', createdAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => { showToast('Posted!','success'); loadClasswork(); }).catch(err => alert('Error: '+err.message));
+}
+function deleteClasswork(id) { if (!confirm('Delete?')) return; db.collection('classwork').doc(id).delete().then(() => { showToast('Deleted!','success'); loadClasswork(); }).catch(err => showToast('Error: '+err.message,'error')); }
 
-// ============ PROGRESS ============
+// ============ PROGRESS & PROFILE ============
 function loadStudentProgress() {
     const content = document.getElementById('dashboardContent');
     if (!content) return;
-    
-    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading progress...</p>';
-    
-    let html = '<h3>📊 Student Progress</h3>';
-    
-    if (userData && userData.role === 'teacher') {
-        db.collection('users').where('role', '==', 'student').get()
-            .then(studentsSnapshot => {
-                if (studentsSnapshot.empty) {
-                    content.innerHTML = '<h3>📊 Student Progress</h3><p style="color:#888;">No students registered yet.</p>';
-                    return;
-                }
-                
-                let items = '';
-                let promises = [];
-                
-                studentsSnapshot.forEach(studentDoc => {
-                    const student = studentDoc.data();
-                    const promise = db.collection('submissions')
-                        .where('studentId', '==', studentDoc.id)
-                        .get()
-                        .then(submissionsSnapshot => {
-                            const submitted = submissionsSnapshot.size;
-                            const total = Math.max(submitted + 2, 1);
-                            const percent = Math.round((submitted / total) * 100);
-                            
-                            items += `
-                                <div style="background:white;padding:12px;margin:8px 0;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
-                                    <strong>${student.fullName || 'Student'}</strong>
-                                    <div style="height:8px;background:#eee;border-radius:4px;margin:8px 0;">
-                                        <div style="height:100%;width:${percent}%;background:#2d8a4e;border-radius:4px;"></div>
-                                    </div>
-                                    <small>${submitted}/${total} completed (${percent}%)</small>
-                                </div>
-                            `;
-                        });
-                    promises.push(promise);
-                });
-                
-                Promise.all(promises).then(() => {
-                    content.innerHTML = '<h3>📊 Student Progress</h3>' + items;
-                });
-            })
-            .catch(err => {
-                content.innerHTML = '<h3>📊 Student Progress</h3><p style="color:red;">Error loading.</p>';
-            });
-    } else if (userData && userData.role === 'student') {
-        html += '<p style="color:#888;">Your progress will appear here as you submit classwork.</p>';
-        content.innerHTML = html;
-    } else {
-        html += '<p style="color:#888;">Progress tracking for parents. Contact school to link your child\'s account.</p>';
-        content.innerHTML = html;
-    }
+    content.innerHTML = '<h3>📊 Progress</h3><p style="color:#888;">Progress tracking loads here.</p>';
+}
+function loadProfile() {
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
+    content.innerHTML = `<div style="background:white;padding:20px;border-radius:12px;"><h3>👤 Profile</h3><p><strong>Name:</strong> ${userData?.fullName||'N/A'}</p><p><strong>Email:</strong> ${userData?.email||'N/A'}</p><p><strong>Role:</strong> ${userData?.role||'N/A'}</p></div>`;
 }
 
 // ============ PROFILE ============
@@ -1644,7 +1378,7 @@ function loadProfile() {
     `;
 }
 
-// ============ PARENT PROGRESS (integrated into loadStudentProgress) ============
+// ============ loadStudentProgress ============
 // The loadStudentProgress function above already handles:
 // - Teachers: see all students
 // - Students: see own progress
