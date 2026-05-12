@@ -1287,41 +1287,11 @@ function loadDashboardSection(section) {
 }
 
 // ============ ANNOUNCEMENTS ============
-async function postAnnouncement() {
-    const title = document.getElementById('newsTitle')?.value?.trim();
-    const content = document.getElementById('newsContent')?.value?.trim();
-    const type = document.getElementById('newsType')?.value || 'announcement';
-    
-    if (!title || !content) {
-        showToast('Please fill in both title and content', 'error');
-        return;
-    }
-    
-    try {
-        await db.collection('announcements').add({
-            title: title,
-            content: content,
-            type: type,
-            author: userData?.fullName || 'Admin',
-            authorId: currentUser?.uid,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        showToast('Announcement posted successfully!', 'success');
-        if (document.getElementById('newsTitle')) document.getElementById('newsTitle').value = '';
-        if (document.getElementById('newsContent')) document.getElementById('newsContent').value = '';
-        loadAnnouncements();
-    } catch (error) {
-        console.error('Error posting announcement:', error);
-        showToast('Error posting announcement: ' + error.message, 'error');
-    }
-}
-
 async function loadAnnouncements() {
-    const newsList = document.getElementById('newsList');
-    if (!newsList) return;
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
     
-    newsList.innerHTML = '<p style="text-align:center;color:#888;">Loading announcements...</p>';
+    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading announcements...</p>';
     
     try {
         const snapshot = await db.collection('announcements')
@@ -1329,38 +1299,64 @@ async function loadAnnouncements() {
             .limit(20)
             .get();
         
-        if (snapshot.empty) {
-            newsList.innerHTML = '<p style="text-align:center;color:#888;">No announcements yet.</p>';
-            return;
-        }
+        let html = '<h3>📢 Announcements</h3>';
         
-        let html = '';
-        snapshot.forEach(doc => {
-            const news = doc.data();
-            const date = news.createdAt ? new Date(news.createdAt.seconds * 1000).toLocaleDateString('en-UG', { 
-                weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' 
-            }) : 'Recently';
-            
-            const badgeColors = {
-                urgent: 'background:#ffe0e0;color:#c0392b;',
-                event: 'background:#e0ffe0;color:#2d8a4e;',
-                announcement: 'background:#e0f0ff;color:#2980b9;'
-            };
-            
+        // Add post form for teachers
+        if (userData && userData.role === 'teacher') {
             html += `
-                <div style="background:white;padding:15px;margin-bottom:10px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.05);border-left:4px solid var(--secondary);">
-                    <span style="display:inline-block;padding:3px 10px;border-radius:15px;font-size:0.7rem;font-weight:600;text-transform:uppercase;${badgeColors[news.type] || badgeColors.announcement}">${news.type || 'Announcement'}</span>
-                    <h4 style="margin:8px 0;color:#1a3a5c;">${news.title}</h4>
-                    <p style="color:#555;">${news.content}</p>
-                    <small style="color:#999;">📅 ${date} — Posted by ${news.author || 'Admin'}</small>
+                <div style="background:#f9f9f9;padding:15px;margin:10px 0;border-radius:8px;">
+                    <input type="text" id="newsTitle" placeholder="Title" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+                    <textarea id="newsContent" placeholder="Content" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;" rows="3"></textarea>
+                    <button onclick="postAnnouncement()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;">Post</button>
                 </div>
             `;
+        }
+        
+        if (snapshot.empty) {
+            html += '<p style="color:#888;text-align:center;">No announcements yet.</p>';
+        } else {
+            snapshot.forEach(doc => {
+                const news = doc.data();
+                html += `
+                    <div style="background:white;padding:15px;margin:10px 0;border-radius:8px;border-left:4px solid #c8943e;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                        <strong>${news.title || 'Untitled'}</strong>
+                        <p>${news.content || ''}</p>
+                        <small style="color:#999;">By ${news.author || 'Admin'}</small>
+                    </div>
+                `;
+            });
+        }
+        
+        content.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Announcements error:', error);
+        content.innerHTML = '<p style="color:red;">Error loading announcements. Check console.</p>';
+    }
+}
+
+async function postAnnouncement() {
+    const title = document.getElementById('newsTitle')?.value?.trim();
+    const content = document.getElementById('newsContent')?.value?.trim();
+    
+    if (!title || !content) {
+        showToast('Please fill title and content', 'error');
+        return;
+    }
+    
+    try {
+        await db.collection('announcements').add({
+            title: title,
+            content: content,
+            author: userData?.fullName || 'Teacher',
+            authorId: currentUser?.uid,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         
-        newsList.innerHTML = html;
+        showToast('Posted!', 'success');
+        loadAnnouncements();
     } catch (error) {
-        console.error('Error loading announcements:', error);
-        newsList.innerHTML = '<p style="color:red;text-align:center;">Error loading announcements. Check console.</p>';
+        showToast('Error: ' + error.message, 'error');
     }
 }
 
