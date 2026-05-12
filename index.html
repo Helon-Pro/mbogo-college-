@@ -888,6 +888,10 @@
         </div>
     </div>
 </div>
+<div class="form-group" id="teacherCodeGroup" style="display:none;">
+    <label>Teacher Registration Code *</label>
+    <input type="password" class="form-control" id="teacherCode" placeholder="Enter the teacher code provided by administration">
+</div>
 
 <!-- LOGIN MODAL -->
 <div class="modal-overlay" id="loginModal">
@@ -1038,6 +1042,9 @@ window.onclick = function(event) {
 };
 
 // ============ AUTHENTICATION ============
+// Teacher secret code
+const TEACHER_SECRET_CODE = "MbogoTeachers2026";
+
 async function signup(event) {
     event.preventDefault();
     
@@ -1071,53 +1078,40 @@ async function signup(event) {
         return;
     }
     
-    // Block disposable/temporary email domains
+    // Block disposable email domains
     const blockedDomains = [
-        'mailinator.com', 'tempmail.com', 'tempmail.org', 'throwaway.com',
-        'guerrillamail.com', 'guerrillamail.org', '10minutemail.com',
-        'yopmail.com', 'yopmail.org', 'sharklasers.com', 'trashmail.com',
-        'fakeinbox.com', 'temp-mail.org', 'temp-mail.com', 'dispostable.com',
-        'maildrop.cc', 'getnada.com', 'throwaway.email', 'mailnesia.com',
-        'spamgourmet.com', '33mail.com', 'trash-can-mail.com',
-        'mt2014.com', 'mt2015.com', 'mt2016.com', 'thanksnospam.com',
-        'noblepioneer.com', 'shivemail.com', 'bcaoo.com'
+        'mailinator.com', 'tempmail.com', 'yopmail.com',
+        'guerrillamail.com', '10minutemail.com', 'throwaway.com'
     ];
-    
     const emailDomain = email.split('@')[1]?.toLowerCase();
     if (blockedDomains.includes(emailDomain)) {
-        showToast('Please use a real email address (Gmail, Yahoo, Outlook, etc.). Temporary emails are not allowed.', 'error');
+        showToast('Please use a real email address. Temporary emails are not allowed.', 'error');
         return;
     }
     
-    // Check for obviously fake patterns
-    const suspiciousPatterns = ['test', 'fake', 'spam', 'noreply', 'no-reply', 'dummy'];
-    const emailUsername = email.split('@')[0]?.toLowerCase();
-    if (suspiciousPatterns.some(pattern => emailUsername.includes(pattern))) {
-        showToast('Please enter your real email address.', 'warning');
-        return;
+    // 🔒 TEACHER CODE CHECK
+    if (role === 'teacher') {
+        const enteredCode = document.getElementById('teacherCode')?.value;
+        if (enteredCode !== TEACHER_SECRET_CODE) {
+            showToast('Invalid teacher registration code. Contact the school administration.', 'error');
+            return;
+        }
     }
     
     try {
-        // Create user in Firebase Auth
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
         
-        // Save user data to Firestore
         const userDoc = {
             fullName: name,
             email: email,
             role: role,
             parentEmail: parentEmail || null,
-            emailVerified: false,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         
         await db.collection('users').doc(user.uid).set(userDoc);
         
-        
-  
-        
-        // If student has parent email, create link
         if (role === 'student' && parentEmail) {
             await db.collection('parentLinks').add({
                 studentId: user.uid,
@@ -1127,7 +1121,7 @@ async function signup(event) {
             });
         }
         
-        showToast('Account created! Please check your email (including spam folder) to verify your account before logging in.', 'success');
+        showToast('Account created successfully! Welcome, ' + name + '!', 'success');
         closeModal('signupModal');
         
     } catch (error) {
@@ -1135,32 +1129,24 @@ async function signup(event) {
         let message = error.message;
         if (error.code === 'auth/email-already-in-use') message = 'This email is already registered. Please login instead.';
         if (error.code === 'auth/invalid-email') message = 'Please enter a valid email address.';
-        if (error.code === 'auth/weak-password') message = 'Password is too weak. Use at least 8 characters with numbers and letters.';
+        if (error.code === 'auth/weak-password') message = 'Password is too weak. Use at least 8 characters.';
         showToast(message, 'error');
     }
 }
-// Show/hide teacher code field
-document.getElementById('signupRole').addEventListener('change', function() {
+
+// Show/hide teacher code field when role changes
+document.getElementById('signupRole')?.addEventListener('change', function() {
     const teacherCodeGroup = document.getElementById('teacherCodeGroup');
+    const teacherCode = document.getElementById('teacherCode');
     if (this.value === 'teacher') {
-        teacherCodeGroup.style.display = 'block';
-        document.getElementById('teacherCode').required = true;
+        if (teacherCodeGroup) teacherCodeGroup.style.display = 'block';
+        if (teacherCode) teacherCode.required = true;
     } else {
-        teacherCodeGroup.style.display = 'none';
-        document.getElementById('teacherCode').required = false;
+        if (teacherCodeGroup) teacherCodeGroup.style.display = 'none';
+        if (teacherCode) teacherCode.required = false;
     }
 });
 
-// In your signup function, add this check:
-const TEACHER_SECRET_CODE = "MbogoTeachers2026"; // Change this!
-
-if (role === 'teacher') {
-    const enteredCode = document.getElementById('teacherCode')?.value;
-    if (enteredCode !== TEACHER_SECRET_CODE) {
-        showToast('Invalid teacher registration code. Contact the school administration.', 'error');
-        return;
-    }
-}
 async function login(event) {
     event.preventDefault();
     
