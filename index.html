@@ -1252,7 +1252,33 @@ function updateUIBasedOnAuth() {
         if (navDashboard) navDashboard.style.display = 'none';
     }
 }
+// ============ NAVIGATION ============
+function showPage(page) {
+    document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
+    const dashboard = document.getElementById('dashboardLayout');
+    if (dashboard) { dashboard.style.display = 'none'; dashboard.classList.remove('active'); }
+    const pageEl = document.getElementById('page-' + page);
+    if (pageEl) pageEl.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
+function openModal(id) {
+    document.getElementById(id)?.classList.add('active');
+}
+
+function closeModal(id) {
+    document.getElementById(id)?.classList.remove('active');
+}
+
+function toggleMenu() {
+    document.getElementById('navLinks')?.classList.toggle('active');
+}
+
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal-overlay')) {
+        event.target.classList.remove('active');
+    }
+};
             // ============ DASHBOARD ============
 function showDashboard() {
     document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
