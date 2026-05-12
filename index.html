@@ -962,6 +962,26 @@
     </div>
 </footer>
 
+        <!-- CURRENT SIDEBAR MENU -->
+<div class="dashboard-layout" id="dashboardLayout">
+    <aside class="sidebar">
+        <h3 style="margin-bottom:1rem;color:#1a3a5c;">Menu</h3>
+        <ul class="sidebar-menu" style="list-style:none;">
+            <li><a onclick="loadAnnouncements()" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;text-decoration:none;color:#333;">📢 Announcements</a></li>
+            <li><a onclick="loadTimetable()" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;text-decoration:none;color:#333;">📅 Timetable</a></li>
+            <li><a onclick="loadClasswork()" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;text-decoration:none;color:#333;">📝 Classwork</a></li>
+            <li><a onclick="loadStudentProgress()" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;text-decoration:none;color:#333;">📊 Progress</a></li>
+            <li><a onclick="loadProfile()" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;text-decoration:none;color:#333;">👤 Profile</a></li>
+        </ul>
+    </aside>
+    <main class="main-content" id="dashboardContent">
+        <div style="text-align:center;padding:50px;color:#888;">
+            <i class="fas fa-arrow-left" style="font-size:3rem;"></i>
+            <p>Select an option from the menu</p>
+        </div>
+    </main>
+</div>
+
 <script>
 // ============ FIREBASE CONFIGURATION ============
 const firebaseConfig = {
