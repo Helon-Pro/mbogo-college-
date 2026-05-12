@@ -825,11 +825,32 @@
     </section>
 </div>
 
+
 <!-- DASHBOARD -->
 <div class="dashboard-layout" id="dashboardLayout">
     <aside class="sidebar">
-        </aside>
+        <h3 style="margin-bottom:1rem;color:#1a3a5c;padding:10px;">📋 Menu</h3>
+        <ul class="sidebar-menu" style="list-style:none;padding:0;">
+            <li><a onclick="loadAnnouncements()" style="cursor:pointer;display:block;padding:12px 15px;margin:5px 0;background:#f5f6fa;border-radius:8px;text-decoration:none;color:#333;font-weight:500;">📢 Announcements</a></li>
+            <li><a onclick="loadTimetable()" style="cursor:pointer;display:block;padding:12px 15px;margin:5px 0;background:#f5f6fa;border-radius:8px;text-decoration:none;color:#333;font-weight:500;">📅 Timetable</a></li>
+            <li><a onclick="loadClasswork()" style="cursor:pointer;display:block;padding:12px 15px;margin:5px 0;background:#f5f6fa;border-radius:8px;text-decoration:none;color:#333;font-weight:500;">📝 Classwork</a></li>
+            <li><a onclick="loadStudentProgress()" style="cursor:pointer;display:block;padding:12px 15px;margin:5px 0;background:#f5f6fa;border-radius:8px;text-decoration:none;color:#333;font-weight:500;">📊 Progress</a></li>
+            <li><a onclick="loadProfile()" style="cursor:pointer;display:block;padding:12px 15px;margin:5px 0;background:#f5f6fa;border-radius:8px;text-decoration:none;color:#333;font-weight:500;">👤 Profile</a></li>
+        </ul>
+    </aside>
+    
     <main class="main-content" id="dashboardContent">
+        <div style="text-align:center;padding:50px 20px;color:#888;">
+            <div style="font-size:4rem;margin-bottom:20px;">👋</div>
+            <h3>Welcome, <span id="dashUserName">Teacher</span>!</h3>
+            <p>Select an option from the menu to get started.</p>
+        </div>
+    </main>
+</div>
+<div class="dashboard-layout" id="dashboardLayout">
+    <aside class="sidebar">
+        </aside>
+    
         <!-- Dynamic content loads here -->
     </main>
 </div>
@@ -963,14 +984,7 @@
     </div>
 </footer>
 
-        <!-- CURRENT SIDEBAR MENU -->
-<ul class="sidebar-menu" style="list-style:none;">
-    <li><a onclick="loadAnnouncements()" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;">📢 Announcements</a></li>
-    <li><a onclick="loadTimetable()" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;">📅 Timetable</a></li>
-    <li><a onclick="loadClasswork()" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;">📝 Classwork</a></li>
-    <li><a onclick="loadStudentProgress()" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;">📊 Progress</a></li>
-    <li><a onclick="loadProfile()" style="cursor:pointer;display:block;padding:12px;margin:8px 0;background:#f5f6fa;border-radius:8px;">👤 Profile</a></li>
-</ul>
+       
 <script>
 // ============ FIREBASE CONFIGURATION ============
 const firebaseConfig = {
