@@ -1008,19 +1008,17 @@
 <script>
 // ============ FIREBASE CONFIGURATION ============
 const firebaseConfig = {
-    apiKey: "AIzaSyAjM2lMoD3E7zr8MnCSU5cqUxfqUCQEsZM",
-    authDomain: "mbogo-college-school-36e7c.firebaseapp.com",
-    projectId: "mbogo-college-school-36e7c",
-    storageBucket: "mbogo-college-school-36e7c.firebasestorage.app",
-    messagingSenderId: "66126002537",
-    appId: "1:66126002537:web:9187261918ae640d9465f8"
+  apiKey: "AIzaSyAjM2lMoD3E7zr8MnCSU5cqUxfqUCQEsZM",
+  authDomain: "mbogo-college-school-36e7c.firebaseapp.com",
+  projectId: "mbogo-college-school-36e7c",
+  storageBucket: "mbogo-college-school-36e7c.firebasestorage.app",
+  messagingSenderId: "66126002537",
+  appId: "1:66126002537:web:9187261918ae640d9465f8"
 };
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-console.log('✅ Firebase connected!');
 
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+  
 
 // ============ GLOBAL STATE ============
 let currentUser = null;
