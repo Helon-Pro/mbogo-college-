@@ -1292,7 +1292,89 @@ function loadDashboardSection(section) {
             break;
     }
 }
+//============= TIMETABLES ============
+async function loadTimetable() {
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
+    
+    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading timetable...</p>';
+    
+    let html = '<h3>📅 Class Timetable</h3>';
+    
+    // Show form for teachers
+    if (userData && userData.role === 'teacher') {
+        html += `
+            <div style="background:#f9f9f9;padding:15px;margin:10px 0;border-radius:8px;">
+                <h4>Add Timetable Entry</h4>
+                <select id="ttDay" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                </select>
+                <input type="text" id="ttTime" placeholder="Time (e.g., 8:00-9:00 AM)" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+                <input type="text" id="ttSubject" placeholder="Subject" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+                <input type="text" id="ttTeacher" placeholder="Teacher name" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+                <button onclick="addTimetable()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;">Add to Timetable</button>
+            </div>
+        `;
+    }
+    
+    try {
+        const snapshot = await db.collection('timetable').get();
+        
+        if (snapshot.empty) {
+            html += '<p style="color:#888;text-align:center;">No timetable entries yet.</p>';
+        } else {
+            html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">';
+            snapshot.forEach(doc => {
+                const tt = doc.data();
+                html += `
+                    <div style="background:white;padding:15px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);">
+                        <strong style="color:#1a3a5c;">${tt.day}</strong>
+                        <p style="margin:5px 0;">${tt.subject}</p>
+                        <small style="color:#888;">⏰ ${tt.time}</small><br>
+                        <small style="color:#888;">👨‍🏫 ${tt.teacher}</small>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        content.innerHTML = html;
+    } catch (error) {
+        content.innerHTML = '<p style="color:red;">Error loading timetable.</p>';
+    }
+}
 
+function addTimetable() {
+    const day = document.getElementById('ttDay').value;
+    const time = document.getElementById('ttTime').value.trim();
+    const subject = document.getElementById('ttSubject').value.trim();
+    const teacher = document.getElementById('ttTeacher').value.trim();
+    
+    if (!time || !subject || !teacher) {
+        showToast('Please fill all fields', 'error');
+        return;
+    }
+    
+    db.collection('timetable').add({
+        day: day,
+        time: time,
+        subject: subject,
+        teacher: teacher,
+        createdBy: currentUser?.uid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+        showToast('Timetable updated!', 'success');
+        loadTimetable();
+    })
+    .catch(err => {
+        showToast('Error: ' + err.message, 'error');
+    });
+}
 // ============ ANNOUNCEMENTS ============
 function loadAnnouncements() {
     const content = document.getElementById('dashboardContent');
@@ -1367,75 +1449,81 @@ function postAnnouncementSimple() {
     });
 }
 // ============ CLASSWORK ============
-async function postClasswork() {
-    const title = document.getElementById('cwTitle')?.value?.trim();
-    const subject = document.getElementById('cwSubject')?.value?.trim();
-    const description = document.getElementById('cwDescription')?.value?.trim();
-    const dueDate = document.getElementById('cwDueDate')?.value;
+async function loadClasswork() {
+    const content = document.getElementById('dashboardContent');
+    if (!content) return;
+    
+    content.innerHTML = '<p style="text-align:center;padding:30px;">Loading classwork...</p>';
+    
+    let html = '<h3>📝 Classwork</h3>';
+    
+    // Show form for teachers
+    if (userData && userData.role === 'teacher') {
+        html += `
+            <div style="background:#f9f9f9;padding:15px;margin:10px 0;border-radius:8px;">
+                <h4>Post New Classwork</h4>
+                <input type="text" id="cwTitle" placeholder="Title" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+                <input type="text" id="cwSubject" placeholder="Subject" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+                <textarea id="cwDescription" placeholder="Description" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea>
+                <input type="date" id="cwDueDate" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;">
+                <button onclick="addClasswork()" style="background:#c8943e;color:white;padding:10px 20px;border:none;border-radius:25px;">Post Classwork</button>
+            </div>
+        `;
+    }
+    
+    try {
+        const snapshot = await db.collection('classwork').orderBy('createdAt', 'desc').get();
+        
+        if (snapshot.empty) {
+            html += '<p style="color:#888;text-align:center;">No classwork posted yet.</p>';
+        } else {
+            snapshot.forEach(doc => {
+                const cw = doc.data();
+                html += `
+                    <div style="background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.05);border-left:4px solid #c8943e;">
+                        <strong style="color:#1a3a5c;">${cw.title}</strong>
+                        <small style="color:#888;"> (${cw.subject || 'General'})</small>
+                        <p style="margin:5px 0;">${cw.description || ''}</p>
+                        ${cw.dueDate ? '<p style="color:#c0392b;">📅 Due: ' + cw.dueDate + '</p>' : ''}
+                        <small style="color:#999;">Posted by ${cw.teacherName || 'Teacher'}</small>
+                    </div>
+                `;
+            });
+        }
+        
+        content.innerHTML = html;
+    } catch (error) {
+        content.innerHTML = '<p style="color:red;">Error loading classwork.</p>';
+    }
+}
+
+function addClasswork() {
+    const title = document.getElementById('cwTitle').value.trim();
+    const subject = document.getElementById('cwSubject').value.trim();
+    const description = document.getElementById('cwDescription').value.trim();
+    const dueDate = document.getElementById('cwDueDate').value;
     
     if (!title) {
         showToast('Please enter a title', 'error');
         return;
     }
     
-    try {
-        await db.collection('classwork').add({
-            title: title,
-            subject: subject || 'General',
-            description: description || '',
-            dueDate: dueDate || '',
-            teacherName: userData?.fullName || 'Teacher',
-            teacherId: currentUser?.uid,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
+    db.collection('classwork').add({
+        title: title,
+        subject: subject,
+        description: description,
+        dueDate: dueDate,
+        teacherName: userData?.fullName || 'Teacher',
+        teacherId: currentUser?.uid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
         showToast('Classwork posted!', 'success');
-        if (document.getElementById('cwTitle')) document.getElementById('cwTitle').value = '';
-        if (document.getElementById('cwSubject')) document.getElementById('cwSubject').value = '';
-        if (document.getElementById('cwDescription')) document.getElementById('cwDescription').value = '';
-        if (document.getElementById('cwDueDate')) document.getElementById('cwDueDate').value = '';
         loadClasswork();
-    } catch (error) {
-        console.error('Error posting classwork:', error);
-        showToast('Error: ' + error.message, 'error');
-    }
-}
-
-async function loadClasswork() {
-    const list = document.getElementById('classworkList');
-    if (!list) return;
-    
-    list.innerHTML = '<p style="text-align:center;color:#888;">Loading classwork...</p>';
-    
-    try {
-        const snapshot = await db.collection('classwork')
-            .orderBy('createdAt', 'desc')
-            .limit(20)
-            .get();
-        
-        if (snapshot.empty) {
-            list.innerHTML = '<p style="text-align:center;color:#888;">No classwork posted yet.</p>';
-            return;
-        }
-        
-        let html = '';
-        snapshot.forEach(doc => {
-            const cw = doc.data();
-            html += `
-                <div style="background:white;padding:15px;margin-bottom:10px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-                    <h4 style="color:#1a3a5c;">${cw.title} <small style="color:#888;">(${cw.subject || 'General'})</small></h4>
-                    <p style="color:#555;">${cw.description || 'No description'}</p>
-                    ${cw.dueDate ? '<p style="color:#c0392b;">📅 Due: ' + cw.dueDate + '</p>' : ''}
-                    <small style="color:#999;">Posted by: ${cw.teacherName || 'Teacher'}</small>
-                </div>
-            `;
-        });
-        
-        list.innerHTML = html;
-    } catch (error) {
-        console.error('Error loading classwork:', error);
-        list.innerHTML = '<p style="color:red;text-align:center;">Error loading classwork.</p>';
-    }
+    })
+    .catch(err => {
+        showToast('Error: ' + err.message, 'error');
+    });
 }
 
 // ============ STUDENT PROGRESS (for teachers) ============
