@@ -1034,6 +1034,7 @@ function loadAnnouncements() {
     var content = document.getElementById('dashboardContent');
     if (!content) return;
     var html = '<h3>📢 Announcements</h3>';
+if (userData && userData.role === 'teacher') 
     html += '<div style="background:#e8f0ff;padding:15px;margin:10px 0;border-radius:8px;border:2px solid #2980b9;"><h4>➕ Post Announcement</h4><input type="text" id="newsTitle" placeholder="Title" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"><textarea id="newsContent" placeholder="Content" rows="3" style="width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:5px;"></textarea><button onclick="postAnnouncement()" style="background:#2980b9;color:white;padding:10px 20px;border:none;border-radius:25px;">Post</button></div><div id="newsList">Loading...</div>';
     content.innerHTML = html;
     db.collection('announcements').orderBy('createdAt','desc').get().then(function(snapshot){
